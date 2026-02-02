@@ -94,7 +94,7 @@ swagger_template = {
         "contact": {
             "email": "admin@foodsaid.com"
         },
-        "version": "0.0.5"
+        "version": "0.0.6"
     },
     "host": config.SWAGGER_HOST,
     "basePath": "/",
@@ -209,7 +209,7 @@ def metrics() -> Response:
               example: healthy
             version:
               type: string
-              example: 0.0.5
+              example: 0.0.6
             config:
               type: object
               properties:
@@ -222,7 +222,7 @@ def metrics() -> Response:
     """
     return jsonify({
         "status": "healthy",
-        "version": "0.0.5",
+        "version": "0.0.6",
         "config": {
             "max_content_length": config.MAX_CONTENT_LENGTH,
             "rate_limit": config.RATE_LIMIT,

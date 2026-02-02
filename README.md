@@ -111,7 +111,7 @@ curl http://localhost:8080/metrics
 ```json
 {
   "status": "healthy",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "config": {
     "max_content_length": 1000,
     "rate_limit": "100 per minute",

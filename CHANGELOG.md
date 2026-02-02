@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] - 2026-02-02
+
+### Added
+- Configurable barcode layout parameters (`module_width`, `module_height`, `quiet_zone`, `font_size`, `text_distance`, `margin_top`)
+- `SWAGGER_HOST` environment variable for dynamic API documentation host configuration
+- `SWAGGER_SCHEMES` environment variable to configure supported protocols (http/https)
+- Swagger UI now supports protocol selection dropdown (http and https)
+
+### Changed
+- Optimized default barcode layout for better readability and paper efficiency
+- Improved barcode text positioning with proper spacing from barcode bars
+
+---
+
 ## [0.0.5] - 2026-02-01
 
 ### Added
@@ -81,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.0.6]: https://github.com/foodsaid/qrbarcode/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/foodsaid/qrbarcode/compare/v0.0.2...v0.0.5
 [0.0.2]: https://github.com/foodsaid/qrbarcode/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/foodsaid/qrbarcode/releases/tag/v0.0.1
