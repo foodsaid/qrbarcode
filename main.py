@@ -31,6 +31,16 @@ class Config:
     QR_BOX_SIZE: int = 10
     RATE_LIMIT: str = "100 per minute"
     DEBUG: bool = False
+    # Barcode options - reduce margins to save paper
+    BARCODE_MODULE_WIDTH: float = 0.3  # Width of one barcode module in mm
+    BARCODE_MODULE_HEIGHT: float = 15.0  # Height of barcode bars in mm
+    BARCODE_QUIET_ZONE: float = 3.0  # Minimal quiet zone on left/right in mm
+    BARCODE_FONT_SIZE: int = 12  # Font size for text below barcode
+    BARCODE_TEXT_DISTANCE: float = 6.0  # Distance between barcode and text in mm
+    BARCODE_MARGIN_TOP: float = 3.0  # Top margin in mm
+    # Swagger configuration
+    SWAGGER_HOST: str = None
+    SWAGGER_SCHEMES: list = None
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -39,6 +49,10 @@ class Config:
         # Load from environment
         self.DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
         self.DEFAULT_PORT = int(os.environ.get('PORT', self.DEFAULT_PORT))
+        # Swagger host and schemes from environment
+        self.SWAGGER_HOST = os.environ.get('SWAGGER_HOST', f'localhost:{self.DEFAULT_PORT}')
+        schemes_env = os.environ.get('SWAGGER_SCHEMES', 'http,https')
+        self.SWAGGER_SCHEMES = [s.strip() for s in schemes_env.split(',')]
 
 
 # Initialize configuration
@@ -82,9 +96,9 @@ swagger_template = {
         },
         "version": "0.0.5"
     },
-    "host": f"localhost:{config.DEFAULT_PORT}",
+    "host": config.SWAGGER_HOST,
     "basePath": "/",
-    "schemes": ["http"],
+    "schemes": config.SWAGGER_SCHEMES,
     "tags": [
         {
             "name": "generate",
@@ -285,8 +299,18 @@ def generate_code() -> Response:
             # Generate Barcode (Code128)
             logger.info(f"Generating barcode for content: {content[:20]}...")
             try:
-                code128 = barcode.get('code128', content, writer=ImageWriter())
-                code128.write(buf)
+                # Configure ImageWriter with reduced margins to save paper
+                writer = ImageWriter()
+                code128 = barcode.get('code128', content, writer=writer)
+                # Write with custom options: reduced quiet zone and text distance
+                code128.write(buf, options={
+                    'module_width': config.BARCODE_MODULE_WIDTH,
+                    'module_height': config.BARCODE_MODULE_HEIGHT,
+                    'quiet_zone': config.BARCODE_QUIET_ZONE,
+                    'font_size': config.BARCODE_FONT_SIZE,
+                    'text_distance': config.BARCODE_TEXT_DISTANCE,
+                    'margin_top': config.BARCODE_MARGIN_TOP,
+                })
             except Exception as e:
                 logger.error(f"Barcode generation failed: {str(e)}")
                 return f"Barcode generation error: {str(e)}", 500
