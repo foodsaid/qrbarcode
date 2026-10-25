@@ -1,0 +1,38 @@
+services:
+  qr-service:
+    image: ${IMAGE_REPO:-qr-service}:${IMAGE_TAG:-stable}
+    pull_policy: never
+    container_name: qr-service
+    ports:
+      - "${QR_HOST_PORT:-8080}:8080"
+    environment:
+      - PORT=8080
+      - DEBUG=false
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health').read()" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - qrnetwork
+
+networks:
+  qrnetwork:
+    external: true
