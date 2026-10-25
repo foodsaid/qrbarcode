@@ -11,7 +11,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 
 - **Offline Ready**: Fully containerized, no internet connection required after build. / **完全离线**: 容器化部署，构建后无需联网。
 - **Print Optimized**: QR codes are generated with minimal whitespace (border=1) to save paper. / **打印优化**: 二维码使用最小边框设计，最大化利用纸张空间。
-- **Dual Support**: Generates both QR Codes and Code128 Barcodes. / **双重支持**: 支持生成二维码和 Code128 条形码。
+- **Code Types**: QR Code, Code 128, Data Matrix, EAN-13, GS1 Digital Link QR and GS1 Data Matrix, as PNG or SVG. / **多种码制**: 二维码、Code 128、Data Matrix、EAN-13、GS1 Digital Link 二维码与 GS1 Data Matrix，输出 PNG 或 SVG。
 - **Simple API**: Easy-to-use HTTP GET endpoints. / **简单API**: 使用 HTTP GET 请求即可调用。
 - **Production Ready**: Includes logging, error handling, input validation, and security headers. / **生产就绪**: 包含日志、错误处理、输入验证和安全响应头。
 - **Health Monitoring**: Built-in health check endpoint for container orchestration. / **健康监控**: 内置健康检查端点，支持容器编排。
@@ -239,7 +239,7 @@ curl "http://localhost:8505/generate?type=gs1qr&gtin=9506000134352&domain=https:
 | `serial` | 21 | `OSRN.DistNumber` |
 | `prod_date` / `pack_date` / `best_before` / `expiry` | 11 / 13 / 15 / 17 | `OBTN.MnfDate` / — / — / `OBTN.ExpDate` |
 
-`tests/gs1_vectors.json` holds shared test vectors that other implementations (e.g. QRprint) can reuse.
+`tests/gs1_vectors.json` holds shared test vectors that other implementations (e.g. [QRprint](https://github.com/foodsaid/QRprint)) can reuse.
 
 ### Signed Anti-Counterfeit Codes / 签名防伪二维码
 
@@ -580,6 +580,12 @@ PROXY_COUNT=1
 - **Response time**: ~50-200ms per request (depends on content size)
 - **Memory usage**: ~50-100MB
 - **Concurrency**: Supports multiple workers with gunicorn
+
+## Related Project / 姊妹项目
+
+**[QRprint](https://github.com/foodsaid/QRprint)**: batch-print QR / Code 128 / Data Matrix labels from Excel in the browser, offline, with the spreadsheet never leaving the machine. Use QRprint for bulk label printing and this API for reports, ERP and system integration.
+
+**[QRprint](https://github.com/foodsaid/QRprint)**：在浏览器里把 Excel 批量打成二维码 / 条码标签，离线可用、表格不出本机。批量打印标签用 QRprint，报表、ERP 与系统集成用本 API。
 
 ## Contributing / 贡献
 
