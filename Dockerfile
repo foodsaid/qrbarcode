@@ -14,8 +14,12 @@ FROM python:3.13-slim@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e07176
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Create non-root user (no network installs here: everything comes from the hash-pinned builder)
-RUN useradd -m -u 1000 appuser && \
+# Drop pip and the ensurepip wheels: unused at runtime, and their vendored packages
+# (urllib3, msgpack, setuptools) are the image's only scanner findings.
+# Then create the non-root user. No network access: dependencies come from the builder.
+RUN python -m pip uninstall --yes --no-input pip && \
+    rm -rf /usr/local/lib/python3.13/ensurepip && \
+    useradd -m -u 1000 appuser && \
     mkdir -p /app && \
     chown -R appuser:appuser /app
 
@@ -28,12 +32,13 @@ COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 # Copy application code, gunicorn config and OpenAPI spec
 COPY --chown=appuser:appuser main.py gunicorn.conf.py openapi.json ./
 COPY --chown=appuser:appuser static ./static
+COPY --chown=appuser:appuser LICENSE THIRD_PARTY_NOTICES.md ./
 
 # Set PATH for user-installed packages
 ENV PATH=/home/appuser/.local/bin:$PATH
 
-# Switch to non-root user
-USER appuser
+# Switch to non-root user (appuser; numeric so platforms can verify it is not root)
+USER 1000:1000
 
 # Expose port
 EXPOSE 8080

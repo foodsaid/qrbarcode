@@ -21,7 +21,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 
 @dataclass

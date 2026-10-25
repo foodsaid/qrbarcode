@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "二维码 / 条形码生成服务",
-    "description": "QR code & Code128 barcode generation API · 直接返回 PNG 图片，可用于网页、报表和打印。\n\n| 用途 | 请求 |\n|---|---|\n| 二维码（默认） | `GET /generate?content=Hello` |\n| 条形码 Code128 | `GET /generate?content=ABC-123&type=barcode` |\n\n限流 Rate limit：每个客户端 IP 每分钟 50 次 `/generate`，超出返回 `429`。",
+    "description": "QR code & Code128 barcode generation API · 直接返回 PNG 图片，可用于网页、报表和打印。\n\n| 用途 | 请求 |\n|---|---|\n| 二维码（默认） | `GET /generate?content=Hello` |\n| 条形码 Code128 | `GET /generate?content=ABC-123&type=barcode` |\n\n限流 Rate limit：每个客户端 IP 每分钟 50 次 `/generate`，超出返回 `429`。\n\n---\n© 2026 foodsaid · MIT License · 文档界面基于 Swagger UI (Apache-2.0)，第三方许可见 [NOTICE](/static/vendor/swagger-ui-5.33.1/NOTICE)\n\nQR Code 是 DENSO WAVE INCORPORATED 的注册商标 · QR Code is a registered trademark of DENSO WAVE INCORPORATED.",
     "version": "set at runtime from main.__version__"
   },
   "tags": [
@@ -130,7 +130,7 @@
           },
           "version": {
             "type": "string",
-            "example": "0.1.3"
+            "example": "0.1.4"
           },
           "config": {
             "type": "object",

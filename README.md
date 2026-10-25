@@ -137,7 +137,7 @@ curl http://localhost:8505/metrics
 ```json
 {
   "status": "healthy",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "config": {
     "max_content_length": 1000,
     "rate_limit": "100 per minute",
@@ -459,8 +459,11 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 ## License / 许可证
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Third-party components (Swagger UI, Python packages, the bundled font) and trademarks are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。第三方组件与商标说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+QR Code is a registered trademark of DENSO WAVE INCORPORATED. / QR Code 是 DENSO WAVE INCORPORATED 的注册商标。
 
 ## Support / 支持
 
