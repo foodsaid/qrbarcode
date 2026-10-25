@@ -1,0 +1,142 @@
+{
+  "_comment": "Shared GS1 test vectors (input fields -> Digital Link URI and element string). Usable by any implementation, e.g. QRprint. GTIN 09506000134352 is GS1's own documentation example.",
+  "valid": [
+    {
+      "name": "GTIN-13 padded to 14, batch and expiry",
+      "input": {
+        "gtin": "9506000134352",
+        "batch": "ABC123",
+        "expiry": "271231"
+      },
+      "uri": "https://id.gs1.org/01/09506000134352/10/ABC123?17=271231",
+      "element_string": "(01)09506000134352(17)271231(10)ABC123"
+    },
+    {
+      "name": "GTIN only",
+      "input": {
+        "gtin": "09506000134352"
+      },
+      "uri": "https://id.gs1.org/01/09506000134352",
+      "element_string": "(01)09506000134352"
+    },
+    {
+      "name": "GTIN-8 and serial",
+      "input": {
+        "gtin": "96385074",
+        "serial": "S-0001"
+      },
+      "uri": "https://id.gs1.org/01/00000096385074/21/S-0001",
+      "element_string": "(01)00000096385074(21)S-0001"
+    },
+    {
+      "name": "lot alias, ISO dates from SAP, all date AIs sorted",
+      "input": {
+        "gtin": "9506000134352",
+        "lot": "L2026/10",
+        "best_before": "2027-03-31",
+        "prod_date": "2026-10-25",
+        "expiry": "2027-04-00"
+      },
+      "uri": "https://id.gs1.org/01/09506000134352/10/L2026%2F10?11=261025&15=270331&17=270400",
+      "element_string": "(01)09506000134352(11)261025(15)270331(17)270400(10)L2026/10"
+    },
+    {
+      "name": "batch and serial, custom resolver with path prefix",
+      "input": {
+        "gtin": "9506000134352",
+        "batch": "B1",
+        "serial": "SN9",
+        "domain": "https://qr.example.com/dl/"
+      },
+      "uri": "https://qr.example.com/dl/01/09506000134352/10/B1/21/SN9",
+      "element_string": "(01)09506000134352(10)B1(21)SN9"
+    }
+  ],
+  "invalid": [
+    {
+      "input": {},
+      "error": "Missing 'gtin'"
+    },
+    {
+      "input": {
+        "gtin": "9506000134353"
+      },
+      "error": "expected '2'"
+    },
+    {
+      "input": {
+        "gtin": "950600013435"
+      },
+      "error": "expected '"
+    },
+    {
+      "input": {
+        "gtin": "95060001343"
+      },
+      "error": "8, 12, 13 or 14 digits"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "batch": "ABCDEFGHIJKLMNOPQRSTU"
+      },
+      "error": "character set 82"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "serial": "SN 9"
+      },
+      "error": "character set 82"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "batch": "批号1"
+      },
+      "error": "character set 82"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "expiry": "271331"
+      },
+      "error": "invalid month"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "expiry": "270230"
+      },
+      "error": "invalid day"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "expiry": "27-12-31"
+      },
+      "error": "YYMMDD"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "domain": "http://id.gs1.org"
+      },
+      "error": "https URL"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "domain": "https://id.gs1.org/?x=1"
+      },
+      "error": "https URL"
+    },
+    {
+      "input": {
+        "gtin": "9506000134352",
+        "domain": "https://user:pw@evil.example"
+      },
+      "error": "https URL"
+    }
+  ]
+}

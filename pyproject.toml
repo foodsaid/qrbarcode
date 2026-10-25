@@ -29,6 +29,7 @@ addopts = [
     "--strict-markers",
     "--cov=main",
     "--cov=codes",
+    "--cov=gs1",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-fail-under=80",

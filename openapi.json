@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "二维码 / 条形码生成服务",
-    "description": "QR code & Code128 barcode generation API · 直接返回 PNG 图片，可用于网页、报表和打印。\n\n| 用途 | 请求 |\n|---|---|\n| 二维码（默认） | `GET /generate?content=Hello` |\n| 条形码 Code128 | `GET /generate?content=ABC-123&type=barcode` |\n| Data Matrix（SVG） | `GET /generate?content=LOT-42&type=datamatrix&format=svg` |\n| EAN-13 | `GET /generate?content=590123412345&type=ean13` |\n\n限流 Rate limit：每个客户端 IP 每分钟 50 次 `/generate`，超出返回 `429`。\n\n---\n© 2026 foodsaid · MIT License · 文档界面基于 Swagger UI (Apache-2.0)，第三方许可见 [NOTICE](/static/vendor/swagger-ui-5.33.1/NOTICE)\n\nQR Code 是 DENSO WAVE INCORPORATED 的注册商标 · QR Code is a registered trademark of DENSO WAVE INCORPORATED.",
+    "description": "QR code & Code128 barcode generation API · 直接返回 PNG 图片，可用于网页、报表和打印。\n\n| 用途 | 请求 |\n|---|---|\n| 二维码（默认） | `GET /generate?content=Hello` |\n| 条形码 Code128 | `GET /generate?content=ABC-123&type=barcode` |\n| Data Matrix（SVG） | `GET /generate?content=LOT-42&type=datamatrix&format=svg` |\n| EAN-13 | `GET /generate?content=590123412345&type=ean13` |\n| GS1 Digital Link 二维码 | `GET /generate?type=gs1qr&gtin=9506000134352&batch=ABC123&expiry=2027-12-31` |\n| GS1 Data Matrix | `GET /generate?type=gs1datamatrix&gtin=9506000134352&batch=ABC123` |\n\n限流 Rate limit：每个客户端 IP 每分钟 50 次 `/generate`，超出返回 `429`。\n\n---\n© 2026 foodsaid · MIT License · 文档界面基于 Swagger UI (Apache-2.0)，第三方许可见 [NOTICE](/static/vendor/swagger-ui-5.33.1/NOTICE)\n\nQR Code 是 DENSO WAVE INCORPORATED 的注册商标 · QR Code is a registered trademark of DENSO WAVE INCORPORATED.",
     "version": "set at runtime from main.__version__"
   },
   "tags": [
@@ -27,8 +27,8 @@
           {
             "name": "content",
             "in": "query",
-            "required": true,
-            "description": "要编码的内容 · Text to encode\n- 二维码 / Data Matrix：最多 1000 个字符，支持任意文本（含中文）\n- 条形码 Code 128：最多 64 个字符，仅限 ASCII，可含 `-` `.` `@` `#` 等符号\n- EAN-13：12 位数字（自动补校验位）或 13 位（校验）",
+            "required": false,
+            "description": "要编码的内容 · Text to encode\n- 二维码 / Data Matrix：最多 1000 个字符，支持任意文本（含中文）\n- 条形码 Code 128：最多 64 个字符，仅限 ASCII，可含 `-` `.` `@` `#` 等符号\n- EAN-13：12 位数字（自动补校验位）或 13 位（校验）\n- GS1 类型不使用 content，改用 gtin 等字段",
             "schema": {
               "type": "string",
               "maxLength": 1000
@@ -39,14 +39,16 @@
             "name": "type",
             "in": "query",
             "required": false,
-            "description": "类型（不区分大小写） · Code type (case-insensitive): `barcode` = Code 128",
+            "description": "类型（不区分大小写） · Code type: `barcode` = Code 128; `gs1qr` = GS1 Digital Link 二维码; `gs1datamatrix` = GS1 Data Matrix",
             "schema": {
               "type": "string",
               "enum": [
                 "qrcode",
                 "barcode",
                 "datamatrix",
-                "ean13"
+                "ean13",
+                "gs1qr",
+                "gs1datamatrix"
               ],
               "default": "qrcode"
             }
@@ -123,6 +125,83 @@
               "type": "boolean",
               "default": true
             }
+          },
+          {
+            "name": "gtin",
+            "in": "query",
+            "required": false,
+            "description": "GTIN-8/12/13/14（校验位必须正确），GS1 类型必填 · GTIN with valid check digit; required for GS1 types",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{8}$|^\\d{12,14}$"
+            },
+            "example": "9506000134352"
+          },
+          {
+            "name": "batch",
+            "in": "query",
+            "required": false,
+            "description": "批号 AI(10)，别名 `lot`；最多 20 个 GS1 字符集 82 字符 · Batch/lot",
+            "schema": {
+              "type": "string",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "serial",
+            "in": "query",
+            "required": false,
+            "description": "序列号 AI(21) · Serial number",
+            "schema": {
+              "type": "string",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "prod_date",
+            "in": "query",
+            "required": false,
+            "description": "生产日期 AI(11)，`YYMMDD` 或 `YYYY-MM-DD` · Production date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pack_date",
+            "in": "query",
+            "required": false,
+            "description": "包装日期 AI(13) · Packaging date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "best_before",
+            "in": "query",
+            "required": false,
+            "description": "最佳食用日期 AI(15) · Best before",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expiry",
+            "in": "query",
+            "required": false,
+            "description": "有效期 AI(17)；日为 00 表示月底 · Expiry (DD=00 = end of month)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "required": false,
+            "description": "Digital Link 解析域名（https），默认 `https://id.gs1.org` · Resolver origin",
+            "schema": {
+              "type": "string",
+              "default": "https://id.gs1.org"
+            }
           }
         ],
         "responses": {
@@ -197,6 +276,126 @@
           }
         }
       }
+    },
+    "/gs1/digital-link": {
+      "get": {
+        "tags": [
+          "generate"
+        ],
+        "summary": "GS1 Digital Link 生成与校验 · Build and validate a GS1 Digital Link",
+        "operationId": "gs1DigitalLink",
+        "description": "校验 GTIN 校验位、批号字符集与日期，返回 Digital Link URI、GS1 元素串和各 AI。可用于 SAP B1：`OITM.CodeBars` → gtin，`OBTN.DistNumber` → batch，`OBTN.ExpDate` → expiry。",
+        "parameters": [
+          {
+            "name": "gtin",
+            "in": "query",
+            "required": true,
+            "description": "GTIN-8/12/13/14（校验位必须正确），GS1 类型必填 · GTIN with valid check digit; required for GS1 types",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{8}$|^\\d{12,14}$"
+            },
+            "example": "9506000134352"
+          },
+          {
+            "name": "batch",
+            "in": "query",
+            "required": false,
+            "description": "批号 AI(10)，别名 `lot`；最多 20 个 GS1 字符集 82 字符 · Batch/lot",
+            "schema": {
+              "type": "string",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "serial",
+            "in": "query",
+            "required": false,
+            "description": "序列号 AI(21) · Serial number",
+            "schema": {
+              "type": "string",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "prod_date",
+            "in": "query",
+            "required": false,
+            "description": "生产日期 AI(11)，`YYMMDD` 或 `YYYY-MM-DD` · Production date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pack_date",
+            "in": "query",
+            "required": false,
+            "description": "包装日期 AI(13) · Packaging date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "best_before",
+            "in": "query",
+            "required": false,
+            "description": "最佳食用日期 AI(15) · Best before",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expiry",
+            "in": "query",
+            "required": false,
+            "description": "有效期 AI(17)；日为 00 表示月底 · Expiry (DD=00 = end of month)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "required": false,
+            "description": "Digital Link 解析域名（https），默认 `https://id.gs1.org` · Resolver origin",
+            "schema": {
+              "type": "string",
+              "default": "https://id.gs1.org"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "校验通过 · Valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigitalLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "字段无效 · Invalid field",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid GTIN check digit '3', expected '2'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -234,6 +433,30 @@
                   ]
                 }
               }
+            }
+          }
+        }
+      },
+      "DigitalLink": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string",
+            "example": "https://id.gs1.org/01/09506000134352/10/ABC123?17=271231"
+          },
+          "element_string": {
+            "type": "string",
+            "example": "(01)09506000134352(17)271231(10)ABC123"
+          },
+          "ais": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "01": "09506000134352",
+              "10": "ABC123",
+              "17": "271231"
             }
           }
         }
