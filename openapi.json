@@ -134,12 +134,11 @@
             "name": "gtin",
             "in": "query",
             "required": false,
-            "description": "GTIN-8/12/13/14（校验位必须正确），GS1 类型必填 · GTIN with valid check digit; required for GS1 types",
+            "description": "GTIN-8/12/13/14（校验位必须正确），GS1 类型必填 · GTIN with valid check digit; required for GS1 types; e.g. `9506000134352`",
             "schema": {
               "type": "string",
               "pattern": "^\\d{8}$|^\\d{12,14}$"
-            },
-            "example": "9506000134352"
+            }
           },
           {
             "name": "batch",
@@ -201,10 +200,9 @@
             "name": "domain",
             "in": "query",
             "required": false,
-            "description": "Digital Link 解析域名（https），默认 `https://id.gs1.org` · Resolver origin",
+            "description": "Digital Link 解析域名（https），不填则为 `https://id.gs1.org` · Resolver origin",
             "schema": {
-              "type": "string",
-              "default": "https://id.gs1.org"
+              "type": "string"
             }
           }
         ],

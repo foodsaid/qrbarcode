@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Docs page: "Try it out" on `/generate` no longer pre-fills `gtin` with an example or sends the default `domain`, so plain QR / barcode requests carry only the parameters that apply (the example and default are still stated in the parameter descriptions)
+
+---
+
 ## [0.2.0] - 2026-10-25
 
 ### Added
