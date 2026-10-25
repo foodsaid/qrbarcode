@@ -21,7 +21,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 
 @dataclass
@@ -141,21 +141,36 @@ def validate_input(content: str, generate_type: str) -> Tuple[bool, str]:
     return True, ""
 
 
-def add_security_headers(response: Response) -> Response:
+# API responses never need to load anything or be framed
+API_CSP = "default-src 'none'; frame-ancestors 'none'"
+# The docs page loads only same-origin assets (no inline script). Swagger UI sets inline
+# styles, uses data: icons, shows "Try it out" images as blob: URLs, and calls the API on
+# the same origin.
+DOCS_CSP = (
+    "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
+    "frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+)
+
+
+def add_security_headers(response: Response, csp: str = API_CSP) -> Response:
     """
     Add security headers to HTTP response.
 
     Args:
         response: Flask Response object
+        csp: Content-Security-Policy to send
 
     Returns:
         Response object with security headers added
     """
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Content-Security-Policy"] = "default-src 'none'; img-src 'self'"
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    # The legacy XSS auditor is removed from browsers and could be abused; "0" disables it
+    response.headers["X-XSS-Protection"] = "0"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = csp
     return response
 
 
@@ -225,7 +240,7 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
                 )
             except Exception as e:
                 logger.error(f"Barcode generation failed: {type(e).__name__}")
-                return f"Barcode generation error: {str(e)}", 500
+                return "Barcode generation error", 500
         else:
             # Generate QR code
             logger.info(f"Generating QR code (length={len(content)})")
@@ -241,12 +256,12 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
                 img.save(buf, format="PNG")
             except Exception as e:
                 logger.error(f"QR code generation failed: {type(e).__name__}")
-                return f"QR code generation error: {str(e)}", 500
+                return "QR code generation error", 500
 
         # Prepare response
         buf.seek(0)
         response = send_file(buf, mimetype="image/png")
-        response = add_security_headers(response)
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
 
         logger.info(f"Successfully generated {generate_type}")
         return response
@@ -291,11 +306,12 @@ def after_request(response: Response) -> Response:
     Returns:
         Response object with headers added
     """
-    # CORS headers (adjust origins for production)
+    # Public, read-only GET API without cookies or auth, so any origin may embed the images
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    return response
+    csp = DOCS_CSP if request.path in ("/docs", "/docs/") else API_CSP
+    return add_security_headers(response, csp)
 
 
 @app.errorhandler(404)

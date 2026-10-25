@@ -7,6 +7,8 @@ from flask import Response
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from main import (
+    API_CSP,
+    DOCS_CSP,
     OPENAPI_SPEC,
     __version__,
     add_security_headers,
@@ -108,9 +110,36 @@ class TestSecurityHeaders:
 
             assert response.headers["X-Content-Type-Options"] == "nosniff"
             assert response.headers["X-Frame-Options"] == "DENY"
-            assert response.headers["X-XSS-Protection"] == "1; mode=block"
-            assert "Content-Security-Policy" in response.headers
-            assert "Cache-Control" in response.headers
+            assert response.headers["X-XSS-Protection"] == "0"
+            assert response.headers["Referrer-Policy"] == "no-referrer"
+            assert response.headers["Content-Security-Policy"] == API_CSP
+
+    def test_headers_on_every_response(self, client):
+        """Test that docs, JSON, errors and images all carry the security headers."""
+        for path in ("/docs", "/apispec.json", "/health", "/nope", "/generate?content=x"):
+            response = client.get(path)
+            assert response.headers["X-Content-Type-Options"] == "nosniff", path
+            assert response.headers["X-Frame-Options"] == "DENY", path
+            assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"], path
+            response.close()
+
+    def test_docs_csp_allows_only_same_origin_scripts(self, client):
+        """Test that the docs page CSP allows same-origin scripts only, with no inline script."""
+        csp = client.get("/docs").headers["Content-Security-Policy"]
+        assert csp == DOCS_CSP
+        assert "script-src 'self';" in csp
+        assert "unsafe-eval" not in csp
+
+    def test_generation_error_hides_exception_text(self, client, monkeypatch):
+        """Test that a failing generator returns a generic message, not exception details."""
+
+        def boom(*_args, **_kwargs):
+            raise RuntimeError("internal path /home/appuser/secret")
+
+        monkeypatch.setattr("main.barcode.get", boom)
+        response = client.get("/generate?content=ABC&type=barcode")
+        assert response.status_code == 500
+        assert response.data == b"Barcode generation error"
 
 
 class TestGenerateEndpoint:
