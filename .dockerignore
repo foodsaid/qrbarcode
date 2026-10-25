@@ -32,6 +32,7 @@ tests/
 # Documentation
 *.md
 !README.md
+!THIRD_PARTY_NOTICES.md
 docs/
 
 # CI/CD

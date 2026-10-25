@@ -2,12 +2,17 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 permissions:
   contents: read
+
+# A newer push to the same PR/branch cancels the older run
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Third-party actions are pinned to commit SHAs (all run on Node.js 24)
 jobs:
@@ -58,6 +63,11 @@ jobs:
       run: |
         bandit -r main.py
 
+    - name: Check CHANGELOG covers the current version
+      run: |
+        # The version in main.py must have a CHANGELOG section before it can be released
+        python scripts/release_notes.py "$(python -c 'import main; print(main.__version__)')" > /dev/null
+
     - name: Run tests with pytest
       run: |
         pytest --cov=main --cov-report=term
@@ -87,11 +97,48 @@ jobs:
     - name: Test Docker image
       run: |
         docker run -d -p 8080:8080 -e PORT=8080 --name qr-test qr-service:test
-        sleep 10
-        curl -f http://localhost:8080/health || exit 1
-        curl -f http://localhost:8080/docs > /dev/null || exit 1
+        # Wait for the image's own HEALTHCHECK instead of a fixed sleep
+        for _ in $(seq 1 30); do
+          [ "$(docker inspect -f '{{.State.Health.Status}}' qr-test)" = healthy ] && break
+          sleep 2
+        done
+        [ "$(docker inspect -f '{{.State.Health.Status}}' qr-test)" = healthy ]
+        curl -fsS http://localhost:8080/health
+        curl -fsS -o /dev/null http://localhost:8080/docs
+        curl -fsS -o /dev/null http://localhost:8080/apispec.json
+        curl -fsS -o qr.png "http://localhost:8080/generate?content=CI"
+        curl -fsS -o bc.png "http://localhost:8080/generate?content=CI-123&type=barcode"
+        file qr.png bc.png | grep -c "PNG image" | grep -qx 2
         docker logs qr-test
         docker stop qr-test
+
+    - name: Check runtime licenses
+      run: docker run --rm -i --entrypoint python qr-service:test - < scripts/check_licenses.py
+
+    # Scans the built image, including OS packages from the base image
+    - name: Scan image with Trivy
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+      with:
+        scan-type: 'image'
+        image-ref: 'qr-service:test'
+        format: 'table'
+        severity: 'HIGH,CRITICAL'
+        ignore-unfixed: true
+        exit-code: '1'
+
+  lint-dockerfile:
+    name: Dockerfile Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+    - name: Lint Dockerfile with hadolint
+      run: |
+        docker run --rm -i \
+          hadolint/hadolint@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d \
+          hadolint --ignore DL3008 --ignore DL3013 - < Dockerfile  # v2.15.1
 
   security:
     name: Security Scan

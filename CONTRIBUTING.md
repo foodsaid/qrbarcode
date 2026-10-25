@@ -237,6 +237,14 @@ class TestFeatureName:
 - [ ] Commit messages follow conventional commits
 - [ ] No merge conflicts
 
+## Releasing
+
+1. Bump `__version__` in `main.py` and add a `## [X.Y.Z] - YYYY-MM-DD` section to `CHANGELOG.md` (CI fails if the section is missing)
+2. Merge to `main`
+3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`
+
+The Release workflow checks that the tag matches `__version__` and is on `main`, then publishes a GitHub Release with that CHANGELOG section as its notes.
+
 ## Reporting Bugs
 
 ### Before Submitting

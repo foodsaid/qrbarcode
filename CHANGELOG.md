@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-10-25
+
+### Added
+- GitHub Releases: pushing a `vX.Y.Z` tag publishes a release whose notes are the matching CHANGELOG section (`.github/workflows/release.yml`, `scripts/release_notes.py`); the tag must match `main.__version__` and be on `main`
+- `THIRD_PARTY_NOTICES.md` listing vendored and runtime third-party licenses, the bundled DejaVu font, and trademarks (QR Code, Swagger, OpenAPI); shipped in the Docker image
+- Swagger UI `NOTICE` and `swagger-ui-bundle.js.LICENSE.txt` (required by Apache-2.0 and referenced by the bundle) vendored next to the bundle
+- CI: copyleft license check inside the runtime image, Trivy scan of the built image (base OS packages included), hadolint, real smoke test of `/generate` and `/apispec.json`, and a check that the current version has a CHANGELOG section
+
+### Changed
+- `LICENSE` copyright holder is now foodsaid
+- Docs page footer states the license, Swagger UI attribution and the QR Code trademark
+- Docker image runs as numeric `USER 1000:1000`
+
+### Security
+- Removed pip and ensurepip from the runtime image: their vendored urllib3, msgpack and setuptools were the only HIGH findings of an image scan (CVE-2026-97687, CVE-2026-97689, GHSA-6v7p-g79w-8964, CVE-2025-47273) and are unused at runtime
+- CI cancels superseded pull-request runs and no longer triggers on the unused `develop` branch
+
+---
+
 ## [0.1.3] - 2026-10-25
 
 ### Fixed
@@ -153,6 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.1.4]: https://github.com/foodsaid/qrbarcode/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/foodsaid/qrbarcode/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/foodsaid/qrbarcode/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/foodsaid/qrbarcode/compare/v0.1.0...v0.1.1
