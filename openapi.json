@@ -1,40 +1,34 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "QR/Barcode Generation API",
-    "description": "A lightweight microservice for generating QR codes and barcodes",
-    "contact": {
-      "name": "foodsaid",
-      "url": "https://github.com/foodsaid/qrbarcode"
-    },
-    "license": {
-      "name": "MIT",
-      "url": "https://github.com/foodsaid/qrbarcode/blob/main/LICENSE"
-    },
+    "title": "二维码 / 条形码生成服务",
+    "description": "QR code & Code128 barcode generation API · 直接返回 PNG 图片，可用于网页、报表和打印。\n\n| 用途 | 请求 |\n|---|---|\n| 二维码（默认） | `GET /generate?content=Hello` |\n| 条形码 Code128 | `GET /generate?content=ABC-123&type=barcode` |\n\n限流 Rate limit：每个客户端 IP 每分钟 50 次 `/generate`，超出返回 `429`。",
     "version": "set at runtime from main.__version__"
   },
   "tags": [
     {
       "name": "generate",
-      "description": "Code generation endpoints"
+      "description": "生成二维码与条形码 · Generate codes"
     },
     {
       "name": "health",
-      "description": "Health check endpoints"
+      "description": "健康检查与运行状态 · Health & metrics"
     }
   ],
   "paths": {
     "/generate": {
       "get": {
-        "tags": ["generate"],
-        "summary": "Generate a QR code or barcode",
+        "tags": [
+          "generate"
+        ],
+        "summary": "生成二维码或条形码 · Generate a QR code or barcode",
         "operationId": "generateCode",
         "parameters": [
           {
             "name": "content",
             "in": "query",
             "required": true,
-            "description": "Text content to encode.\n- QR code: max 1000 chars, supports any text\n- Barcode: max 64 chars, ASCII characters only (supports special chars like `-` `.` `@` `#`)",
+            "description": "要编码的内容 · Text to encode\n- 二维码 QR code：最多 1000 个字符，支持任意文本（含中文）\n- 条形码 Barcode：最多 64 个字符，仅限 ASCII，可含 `-` `.` `@` `#` 等符号",
             "schema": {
               "type": "string",
               "maxLength": 1000
@@ -45,17 +39,20 @@
             "name": "type",
             "in": "query",
             "required": false,
-            "description": "Type of code to generate (case-insensitive)",
+            "description": "类型（不区分大小写） · Code type (case-insensitive)",
             "schema": {
               "type": "string",
-              "enum": ["qrcode", "barcode"],
+              "enum": [
+                "qrcode",
+                "barcode"
+              ],
               "default": "qrcode"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Generated PNG image",
+            "description": "PNG 图片 · PNG image",
             "content": {
               "image/png": {
                 "schema": {
@@ -74,17 +71,20 @@
           "500": {
             "$ref": "#/components/responses/InternalError"
           }
-        }
+        },
+        "description": "返回 PNG 图片。中文等非 ASCII 内容请使用二维码。\n\nReturns a PNG image. Use a QR code for non-ASCII text such as Chinese."
       }
     },
     "/health": {
       "get": {
-        "tags": ["health"],
-        "summary": "Health check for monitoring and container orchestration",
+        "tags": [
+          "health"
+        ],
+        "summary": "健康检查 · Health check",
         "operationId": "healthCheck",
         "responses": {
           "200": {
-            "description": "Service is healthy",
+            "description": "服务正常 · Service is healthy",
             "content": {
               "text/html": {
                 "schema": {
@@ -99,12 +99,14 @@
     },
     "/metrics": {
       "get": {
-        "tags": ["health"],
-        "summary": "Basic service metrics",
+        "tags": [
+          "health"
+        ],
+        "summary": "运行状态与限流配置 · Service metrics",
         "operationId": "metrics",
         "responses": {
           "200": {
-            "description": "Service metrics",
+            "description": "服务指标 · Service metrics",
             "content": {
               "application/json": {
                 "schema": {
@@ -146,7 +148,10 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["qrcode", "barcode"]
+                  "enum": [
+                    "qrcode",
+                    "barcode"
+                  ]
                 }
               }
             }
@@ -156,7 +161,7 @@
     },
     "responses": {
       "BadRequest": {
-        "description": "Invalid input parameters",
+        "description": "参数错误 · Invalid input parameters",
         "content": {
           "text/html": {
             "schema": {
@@ -167,7 +172,7 @@
         }
       },
       "RateLimited": {
-        "description": "Rate limit exceeded",
+        "description": "请求过于频繁 · Rate limit exceeded",
         "content": {
           "text/html": {
             "schema": {
@@ -178,7 +183,7 @@
         }
       },
       "InternalError": {
-        "description": "Internal server error",
+        "description": "服务器内部错误 · Internal server error",
         "content": {
           "text/html": {
             "schema": {

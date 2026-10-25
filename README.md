@@ -423,12 +423,20 @@ Environment variables:
 | `RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable rate limiting (e.g. trusted internal network) |
 | `RATE_LIMIT` | `100 per minute` | Global limit per client IP |
 | `GENERATE_RATE_LIMIT` | `50 per minute` | Limit per client IP on `/generate` |
-| `SWAGGER_HOST` | *(empty)* | Public host for the OpenAPI `servers` list, e.g. `qr.example.com`. Empty = relative `/`, so Swagger UI calls the same scheme and host the docs page was opened on |
+| `PROXY_COUNT` | `0` | Number of reverse proxies in front of the app (`1` for a Cloudflare Tunnel or a single nginx). Trusts their `X-Forwarded-For` / `X-Forwarded-Proto`, so rate limits count real client IPs. Only set it when the port is reachable through those proxies alone |
+| `SWAGGER_HOST` | *(empty)* | Public host for the OpenAPI `servers` list, e.g. `qr.example.com`. Empty = no servers list, so Swagger UI calls the same scheme and host the docs page was opened on |
 | `SWAGGER_SCHEMES` | `https,http` | Protocols listed for `SWAGGER_HOST` (first is the default); ignored when `SWAGGER_HOST` is empty |
 
-Rate limits are stored in memory, so each gunicorn worker counts separately. Behind a reverse proxy, all requests share the proxy's IP unless the proxy is configured to pass the client address.
+Rate limits are stored in memory, so each gunicorn worker counts separately. Behind a reverse proxy (Cloudflare Tunnel, nginx), every request arrives from the proxy's address and all clients would share one limit: set `PROXY_COUNT=1` and bind the port to localhost (`QR_HOST_PORT=127.0.0.1:8505`) so only the proxy can reach it.
 
-速率限制保存在内存中，每个 gunicorn worker 独立计数。部署在反向代理后时，所有请求会共享代理 IP，请注意配置。
+速率限制保存在内存中，每个 gunicorn worker 独立计数。部署在反向代理（Cloudflare Tunnel、nginx）后时，所有请求都来自代理地址，所有客户端会共用一个额度：请设置 `PROXY_COUNT=1`，并把端口只绑定到本机（`QR_HOST_PORT=127.0.0.1:8505`），确保只有代理能访问。
+
+Example `.env` next to `docker-compose.yml` (not committed) / 示例 `.env`（不提交）:
+
+```bash
+QR_HOST_PORT=127.0.0.1:8505
+PROXY_COUNT=1
+```
 
 ## Performance / 性能
 

@@ -8,9 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.3] - 2026-10-25
 
 ### Fixed
-- Swagger UI "Try it out" hung for ~30 s and then failed when the `https` server was picked on a plain-http port. Without `SWAGGER_HOST`, the spec now lists only the relative server `/`, so requests use the docs page's own scheme and host (also correct behind a TLS-terminating proxy)
+- Swagger UI "Try it out" hung for ~30 s and then failed when the `https` server was picked on a plain-http port. Without `SWAGGER_HOST`, requests now use the docs page's own scheme and host (also correct behind a TLS-terminating proxy)
+
+### Added
+- `PROXY_COUNT`: trust `X-Forwarded-For` / `X-Forwarded-Proto` from that many reverse proxies, so rate limits count real client IPs behind Cloudflare Tunnel or nginx (previously all clients shared the proxy's limit)
+- `/` redirects to `/docs`
 
 ### Changed
+- Docs page: bilingual (Chinese/English) texts, `/generate` opens ready to execute, request duration shown, Servers dropdown and Schemas section hidden, contact/license links removed, tighter layout and an icon
+- Without `SWAGGER_HOST` the spec has no `servers` list (Swagger UI then uses the page's own origin)
 - `SWAGGER_SCHEMES` only applies when `SWAGGER_HOST` is set; its default is now `https,http`
 - Default host port is now `8505` (Docker Compose `QR_HOST_PORT`, `run_local.sh`, `make run`, README examples); the container still listens on `8080`
 

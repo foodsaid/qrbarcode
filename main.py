@@ -15,9 +15,11 @@ from typing import Any, Dict, Tuple, Union
 import barcode
 import qrcode
 from barcode.writer import ImageWriter
-from flask import Flask, Response, jsonify, request, send_file
+from flask import Flask, Response, jsonify, redirect, request, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 __version__ = "0.1.3"
 
@@ -36,6 +38,10 @@ class Config:
     RATE_LIMIT: str = "100 per minute"  # Global default per client IP
     GENERATE_RATE_LIMIT: str = "50 per minute"  # Per client IP on /generate
     DEBUG: bool = False
+    # Reverse proxies in front of the app (e.g. 1 for a Cloudflare Tunnel). Their
+    # X-Forwarded-For / X-Forwarded-Proto are trusted so rate limits count real client IPs.
+    # Only set this when the port is reachable through those proxies alone.
+    PROXY_COUNT: int = 0
     # Barcode options - reduce margins to save paper
     BARCODE_MODULE_WIDTH: float = 0.3  # Width of one barcode module in mm
     BARCODE_MODULE_HEIGHT: float = 15.0  # Height of barcode bars in mm
@@ -43,8 +49,8 @@ class Config:
     BARCODE_FONT_SIZE: int = 12  # Font size for text below barcode
     BARCODE_TEXT_DISTANCE: float = 6.0  # Distance between barcode and text in mm
     BARCODE_MARGIN_TOP: float = 3.0  # Top margin in mm
-    # API docs servers. Empty host = relative "/" (same scheme and host as the docs page).
-    # Schemes only apply when SWAGGER_HOST is set; the first one is Swagger UI's default.
+    # API docs servers. Empty host = no servers list, so Swagger UI calls the docs page's own
+    # scheme and host. Schemes only apply when SWAGGER_HOST is set; the first is the default.
     SWAGGER_HOST: str = ""
     SWAGGER_SCHEMES: list = field(default_factory=lambda: ["https", "http"])
 
@@ -52,6 +58,7 @@ class Config:
         """Load configuration from environment."""
         self.DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
         self.DEFAULT_PORT = int(os.environ.get("PORT", self.DEFAULT_PORT))
+        self.PROXY_COUNT = int(os.environ.get("PROXY_COUNT", self.PROXY_COUNT))
         self.RATE_LIMIT_ENABLED = os.environ.get("RATE_LIMIT_ENABLED", "true").lower() == "true"
         self.RATE_LIMIT = os.environ.get("RATE_LIMIT", self.RATE_LIMIT)
         self.GENERATE_RATE_LIMIT = os.environ.get("GENERATE_RATE_LIMIT", self.GENERATE_RATE_LIMIT)
@@ -68,6 +75,10 @@ config = Config()
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max request size
 app.config["RATELIMIT_ENABLED"] = config.RATE_LIMIT_ENABLED
+if config.PROXY_COUNT > 0:
+    app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
+        app.wsgi_app, x_for=config.PROXY_COUNT, x_proto=config.PROXY_COUNT
+    )
 
 # Initialize rate limiter (in-memory: limits are per gunicorn worker)
 limiter = Limiter(
@@ -248,12 +259,11 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
 @app.route("/apispec.json")
 def apispec() -> Response:
     """Serve the OpenAPI spec with servers for the configured host and schemes."""
-    if config.SWAGGER_HOST:
-        servers = [{"url": f"{s}://{config.SWAGGER_HOST}"} for s in config.SWAGGER_SCHEMES]
-    else:
-        # A relative URL makes Swagger UI call back on the page's own scheme and host, so it never
+    if not config.SWAGGER_HOST:
+        # Without servers Swagger UI calls back on the page's own scheme and host, so it never
         # offers https on a plain-http port (or http behind a TLS-terminating proxy).
-        servers = [{"url": "/"}]
+        return jsonify(OPENAPI_SPEC)
+    servers = [{"url": f"{s}://{config.SWAGGER_HOST}"} for s in config.SWAGGER_SCHEMES]
     return jsonify(dict(OPENAPI_SPEC, servers=servers))
 
 
@@ -262,6 +272,12 @@ def apispec() -> Response:
 def docs() -> Response:
     """Serve the Swagger UI page."""
     return app.send_static_file("docs/index.html")
+
+
+@app.route("/")
+def index() -> WerkzeugResponse:
+    """Send visitors of the bare domain to the API docs."""
+    return redirect("/docs", code=302)
 
 
 @app.after_request

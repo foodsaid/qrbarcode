@@ -1,0 +1,71 @@
+/* Tighten the Swagger UI default layout for a single-purpose service */
+body {
+  margin: 0;
+  background: #fafafa;
+  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.swagger-ui .wrapper {
+  max-width: 1080px;
+  padding: 0 16px;
+}
+
+.swagger-ui .information-container.wrapper {
+  padding-top: 8px;
+}
+
+.swagger-ui .info {
+  margin: 24px 0 8px;
+}
+
+.swagger-ui .info .title {
+  font-size: 28px;
+}
+
+.swagger-ui .info .title small {
+  top: -4px;
+}
+
+/* The spec URL link under the title is noise for report authors */
+.swagger-ui .info hgroup.main a {
+  display: none;
+}
+
+.swagger-ui .info .description p,
+.swagger-ui .info .description td {
+  font-size: 14px;
+}
+
+.swagger-ui .info .description table {
+  margin: 8px 0;
+  border-collapse: collapse;
+}
+
+.swagger-ui .info .description th,
+.swagger-ui .info .description td {
+  padding: 4px 12px 4px 0;
+  text-align: left;
+}
+
+.swagger-ui .opblock-tag {
+  padding: 8px 0;
+  font-size: 20px;
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+  font-size: 14px;
+}
+
+/* Show generated images at a readable size */
+.swagger-ui .live-responses-table img {
+  max-width: 320px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  padding: 8px;
+}
+
+@media (max-width: 600px) {
+  .swagger-ui .info .title {
+    font-size: 22px;
+  }
+}

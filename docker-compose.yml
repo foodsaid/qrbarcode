@@ -9,6 +9,7 @@ services:
       - PORT=8080
       - DEBUG=false
       - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+      - PROXY_COUNT=${PROXY_COUNT:-0}
     restart: unless-stopped
     stop_grace_period: 30s
     healthcheck:

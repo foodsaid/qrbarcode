@@ -6,5 +6,15 @@ window.addEventListener("load", function () {
     deepLinking: true,
     presets: [SwaggerUIBundle.presets.apis],
     layout: "BaseLayout",
+    // Ready to call straight away: no "Try it out" click, no Schemas section
+    tryItOutEnabled: true,
+    displayRequestDuration: true,
+    defaultModelsExpandDepth: -1,
+    onComplete: function () {
+      // Open /generate unless the URL already points at another operation
+      if (!window.location.hash) {
+        window.ui.layoutActions.show(["operations", "generate", "generateCode"], true);
+      }
+    },
   });
 });
