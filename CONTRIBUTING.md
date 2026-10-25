@@ -71,7 +71,7 @@ make audit
 
 ### Changing Dependencies
 
-`requirements.txt` and `requirements-dev.txt` are generated lock files with hashes. Do not edit them by hand:
+`requirements.txt` and `requirements-dev.txt` are generated lock files with hashes, resolved for Linux and Python 3.12+. On Windows, develop in WSL or Docker. Do not edit them by hand:
 
 1. Change the pin in `requirements.in` (runtime) or `requirements-dev.in` (tooling)
 2. Run `make lock` (needs [uv](https://docs.astral.sh/uv/)); it only picks releases at least 14 days old
