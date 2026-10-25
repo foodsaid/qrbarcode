@@ -6,6 +6,8 @@ Flask-Limiter==4.1.1
 qrcode[pil]==8.2
 gunicorn==26.2.0
 python-barcode==0.16.1
+# Data Matrix, EAN-13 and GS1 symbols (bundles libzint)
+zxing-cpp==3.1.1
 
 # Security floors for transitive dependencies (OSV, 2026-10-25).
 # These are allowed to be newer than the 14-day cooldown in `make lock`.

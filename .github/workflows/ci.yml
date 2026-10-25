@@ -74,7 +74,7 @@ jobs:
 
     - name: Run tests with pytest
       run: |
-        pytest --cov=main --cov-report=term
+        pytest --cov=main --cov=codes --cov-report=term
 
   docker:
     name: Docker Build
@@ -112,7 +112,10 @@ jobs:
         curl -fsS -o /dev/null http://localhost:8080/apispec.json
         curl -fsS -o qr.png "http://localhost:8080/generate?content=CI"
         curl -fsS -o bc.png "http://localhost:8080/generate?content=CI-123&type=barcode"
-        file qr.png bc.png | grep -c "PNG image" | grep -qx 2
+        curl -fsS -o dm.png "http://localhost:8080/generate?content=CI&type=datamatrix"
+        curl -fsS -o ean.png "http://localhost:8080/generate?content=590123412345&type=ean13"
+        file qr.png bc.png dm.png ean.png | grep -c "PNG image" | grep -qx 4
+        curl -fsS "http://localhost:8080/generate?content=CI&type=datamatrix&format=svg" | grep -q "<svg"
         docker logs qr-test
         docker stop qr-test
 

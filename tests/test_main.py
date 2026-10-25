@@ -136,7 +136,7 @@ class TestSecurityHeaders:
         def boom(*_args, **_kwargs):
             raise RuntimeError("internal path /home/appuser/secret")
 
-        monkeypatch.setattr("main.barcode.get", boom)
+        monkeypatch.setattr("codes.barcode.get", boom)
         response = client.get("/generate?content=ABC&type=barcode")
         assert response.status_code == 500
         assert response.data == b"Barcode generation error"
@@ -157,6 +157,40 @@ class TestGenerateEndpoint:
         assert response.status_code == 200
         assert response.mimetype == "image/png"
         assert len(response.data) > 0
+
+    @pytest.mark.parametrize(
+        "query, mimetype",
+        [
+            ("content=LOT-42&type=datamatrix", "image/png"),
+            ("content=590123412345&type=ean13", "image/png"),
+            ("content=Hello&format=svg", "image/svg+xml"),
+            ("content=LOT-42&type=datamatrix&format=svg&scale=4", "image/svg+xml"),
+            ("content=Hello&size=300&ec=Q", "image/png"),
+        ],
+    )
+    def test_generate_new_types_and_formats(self, client, query, mimetype):
+        """Test the v0.2 types and options through HTTP, including the API CSP on SVG."""
+        response = client.get(f"/generate?{query}")
+        assert response.status_code == 200
+        assert response.mimetype == mimetype
+        assert (
+            response.headers["Content-Security-Policy"]
+            == "default-src 'none'; frame-ancestors 'none'"
+        )
+
+    @pytest.mark.parametrize(
+        "query, message",
+        [
+            ("content=x&format=gif", b"Invalid format"),
+            ("content=x&scale=99", b"between"),
+            ("content=5901234123458&type=ean13", b"check digit"),
+        ],
+    )
+    def test_generate_rejects_bad_options(self, client, query, message):
+        """Test that invalid options are 400 with a readable message."""
+        response = client.get(f"/generate?{query}")
+        assert response.status_code == 400
+        assert message in response.data
 
     def test_generate_barcode_success(self, client):
         """Test successful barcode generation."""

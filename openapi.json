@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "二维码 / 条形码生成服务",
-    "description": "QR code & Code128 barcode generation API · 直接返回 PNG 图片，可用于网页、报表和打印。\n\n| 用途 | 请求 |\n|---|---|\n| 二维码（默认） | `GET /generate?content=Hello` |\n| 条形码 Code128 | `GET /generate?content=ABC-123&type=barcode` |\n\n限流 Rate limit：每个客户端 IP 每分钟 50 次 `/generate`，超出返回 `429`。\n\n---\n© 2026 foodsaid · MIT License · 文档界面基于 Swagger UI (Apache-2.0)，第三方许可见 [NOTICE](/static/vendor/swagger-ui-5.33.1/NOTICE)\n\nQR Code 是 DENSO WAVE INCORPORATED 的注册商标 · QR Code is a registered trademark of DENSO WAVE INCORPORATED.",
+    "description": "QR code & Code128 barcode generation API · 直接返回 PNG 图片，可用于网页、报表和打印。\n\n| 用途 | 请求 |\n|---|---|\n| 二维码（默认） | `GET /generate?content=Hello` |\n| 条形码 Code128 | `GET /generate?content=ABC-123&type=barcode` |\n| Data Matrix（SVG） | `GET /generate?content=LOT-42&type=datamatrix&format=svg` |\n| EAN-13 | `GET /generate?content=590123412345&type=ean13` |\n\n限流 Rate limit：每个客户端 IP 每分钟 50 次 `/generate`，超出返回 `429`。\n\n---\n© 2026 foodsaid · MIT License · 文档界面基于 Swagger UI (Apache-2.0)，第三方许可见 [NOTICE](/static/vendor/swagger-ui-5.33.1/NOTICE)\n\nQR Code 是 DENSO WAVE INCORPORATED 的注册商标 · QR Code is a registered trademark of DENSO WAVE INCORPORATED.",
     "version": "set at runtime from main.__version__"
   },
   "tags": [
@@ -21,14 +21,14 @@
         "tags": [
           "generate"
         ],
-        "summary": "生成二维码或条形码 · Generate a QR code or barcode",
+        "summary": "生成二维码、条形码、Data Matrix、EAN-13 · Generate QR, Code 128, Data Matrix, EAN-13",
         "operationId": "generateCode",
         "parameters": [
           {
             "name": "content",
             "in": "query",
             "required": true,
-            "description": "要编码的内容 · Text to encode\n- 二维码 QR code：最多 1000 个字符，支持任意文本（含中文）\n- 条形码 Barcode：最多 64 个字符，仅限 ASCII，可含 `-` `.` `@` `#` 等符号",
+            "description": "要编码的内容 · Text to encode\n- 二维码 / Data Matrix：最多 1000 个字符，支持任意文本（含中文）\n- 条形码 Code 128：最多 64 个字符，仅限 ASCII，可含 `-` `.` `@` `#` 等符号\n- EAN-13：12 位数字（自动补校验位）或 13 位（校验）",
             "schema": {
               "type": "string",
               "maxLength": 1000
@@ -39,25 +39,105 @@
             "name": "type",
             "in": "query",
             "required": false,
-            "description": "类型（不区分大小写） · Code type (case-insensitive)",
+            "description": "类型（不区分大小写） · Code type (case-insensitive): `barcode` = Code 128",
             "schema": {
               "type": "string",
               "enum": [
                 "qrcode",
-                "barcode"
+                "barcode",
+                "datamatrix",
+                "ean13"
               ],
               "default": "qrcode"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "输出格式 · Output format. SVG 为矢量，打印可任意放大",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "png",
+                "svg"
+              ],
+              "default": "png"
+            }
+          },
+          {
+            "name": "scale",
+            "in": "query",
+            "required": false,
+            "description": "每个模块的像素数 · Pixels per module (不能与 size 同时使用)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 40
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "目标宽度（像素），自动选最大的整数缩放 · Target width in px; picks the largest whole scale that fits",
+            "schema": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 4096
+            }
+          },
+          {
+            "name": "border",
+            "in": "query",
+            "required": false,
+            "description": "静区宽度（模块数） · Quiet zone in modules. EAN-13 不可调",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            }
+          },
+          {
+            "name": "ec",
+            "in": "query",
+            "required": false,
+            "description": "二维码纠错等级 · QR error correction. 包装易磨损时建议 M 或 Q",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "L",
+                "M",
+                "Q",
+                "H"
+              ],
+              "default": "L"
+            }
+          },
+          {
+            "name": "text",
+            "in": "query",
+            "required": false,
+            "description": "一维码下方是否印文字 · Human-readable text under 1D codes",
+            "schema": {
+              "type": "boolean",
+              "default": true
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "PNG 图片 · PNG image",
+            "description": "图片 · Image",
             "content": {
               "image/png": {
                 "schema": {
                   "type": "string",
                   "format": "binary"
+                }
+              },
+              "image/svg+xml": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -72,7 +152,7 @@
             "$ref": "#/components/responses/InternalError"
           }
         },
-        "description": "返回 PNG 图片。中文等非 ASCII 内容请使用二维码。\n\nReturns a PNG image. Use a QR code for non-ASCII text such as Chinese."
+        "description": "返回 PNG 或 SVG 图片。中文等非 ASCII 内容请使用二维码或 Data Matrix。\n\nReturns a PNG or SVG image. Use a QR code or Data Matrix for non-ASCII text such as Chinese."
       }
     },
     "/health": {

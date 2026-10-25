@@ -28,6 +28,7 @@ addopts = [
     "--verbose",
     "--strict-markers",
     "--cov=main",
+    "--cov=codes",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-fail-under=80",

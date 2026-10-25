@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `type=datamatrix` and `type=ean13` (EAN-13 adds or verifies the GS1 check digit), via zxing-cpp
+- `format=svg` for every type; `scale`, `size`, `border`, `ec` (QR error correction) and `text` options
+- `codes.py`: rendering independent of Flask, shared by the API and the upcoming MCP server
+- Tests decode every generated image with zxing-cpp; `docs/v0.2-plan.md` describes the v0.2 roadmap
+
+### Fixed
+- QR content beyond capacity returned 500 (qrcode 8 raises `ValueError`, not `DataOverflowError`); now a 400 with a clear message
+
+---
+
 ## [0.1.5] - 2026-10-25
 
 ### Security
