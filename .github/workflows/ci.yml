@@ -74,7 +74,7 @@ jobs:
 
     - name: Run tests with pytest
       run: |
-        pytest --cov=main --cov=codes --cov-report=term
+        pytest --cov=main --cov=codes --cov=gs1 --cov-report=term
 
   docker:
     name: Docker Build
@@ -116,6 +116,10 @@ jobs:
         curl -fsS -o ean.png "http://localhost:8080/generate?content=590123412345&type=ean13"
         file qr.png bc.png dm.png ean.png | grep -c "PNG image" | grep -qx 4
         curl -fsS "http://localhost:8080/generate?content=CI&type=datamatrix&format=svg" | grep -q "<svg"
+        curl -fsS "http://localhost:8080/gs1/digital-link?gtin=9506000134352&batch=CI&expiry=271231" \
+          | grep -q '"uri":"https://id.gs1.org/01/09506000134352/10/CI?17=271231"'
+        curl -fsS -o gs1.png "http://localhost:8080/generate?type=gs1datamatrix&gtin=9506000134352&batch=CI"
+        file gs1.png | grep -q "PNG image"
         docker logs qr-test
         docker stop qr-test
 

@@ -10,7 +10,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Mapping, Tuple, Union
 
 from flask import Flask, Response, jsonify, redirect, request, send_file
 from flask_limiter import Limiter
@@ -19,6 +19,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 import codes
+import gs1
+
+# Built from GS1 fields (gtin, batch, serial, dates) instead of `content`
+GS1_TYPES = {"gs1qr", "gs1datamatrix"}
 
 __version__ = "0.1.5"
 
@@ -30,7 +34,7 @@ class Config:
     MAX_CONTENT_LENGTH: int = 1000
     BARCODE_MAX_LENGTH: int = 64
     DEFAULT_PORT: int = 8080
-    ALLOWED_TYPES: set = field(default_factory=lambda: set(codes.KINDS))
+    ALLOWED_TYPES: set = field(default_factory=lambda: set(codes.KINDS) | GS1_TYPES)
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT: str = "100 per minute"  # Global default per client IP
     GENERATE_RATE_LIMIT: str = "50 per minute"  # Per client IP on /generate
@@ -187,51 +191,70 @@ def metrics() -> Response:
     )
 
 
+def resolve_content(generate_type: str, args: Mapping[str, str]) -> str:
+    """Return the text to encode: `content`, or the GS1 data for GS1 types. Raises CodeError."""
+    if generate_type in GS1_TYPES:
+        item = gs1.build(args)
+        if generate_type == "gs1qr":
+            return item.digital_link(args.get("domain") or gs1.DEFAULT_RESOLVER)
+        return item.element_string()
+    content = (args.get("content") or "").strip()
+    is_valid, error_msg = validate_input(content, generate_type)
+    if not is_valid:
+        raise codes.CodeError(error_msg)
+    return content
+
+
+def render_type(generate_type: str, content: str, options: codes.RenderOptions):
+    """Render with the right renderer for an API type; returns (bytes, mimetype)."""
+    if generate_type == "gs1datamatrix":
+        return codes.render_gs1_datamatrix(content, options)
+    return codes.render("qrcode" if generate_type == "gs1qr" else generate_type, content, options)
+
+
 @app.route("/generate")
 @limiter.limit(lambda: config.GENERATE_RATE_LIMIT)
 def generate_code() -> Union[Response, Tuple[str, int]]:
     """
-    Generate a QR code or barcode PNG from the `content` and `type` query parameters.
+    Generate a code image from the query parameters (`content` or GS1 fields, `type`, options).
 
     See openapi.json for the full parameter and response contract.
     """
+    generate_type = request.args.get("type", "qrcode").lower()
     try:
-        # Get and validate parameters
-        content = request.args.get("content", "").strip()
-        generate_type = request.args.get("type", "qrcode").lower()
-
-        # Validate input
-        is_valid, error_msg = validate_input(content, generate_type)
-        if not is_valid:
-            logger.warning(
-                f"Invalid input: {error_msg} - length={len(content)}, type={generate_type}"
-            )
-            return error_msg, 400
-
-        try:
-            options = codes.parse_options(request.args)
-        except codes.CodeError as e:
-            return str(e), 400
-
+        content = resolve_content(generate_type, request.args)
+        options = codes.parse_options(request.args)
         logger.info(f"Generating {generate_type} (length={len(content)}, format={options.format})")
-        try:
-            data, mimetype = codes.render(generate_type, content, options)
-        except codes.CodeError as e:
-            logger.warning(f"Invalid input: {e} - length={len(content)}, type={generate_type}")
-            return str(e), 400
-        except Exception as e:
-            logger.error(f"{generate_type} generation failed: {type(e).__name__}")
-            return f"{'QR code' if generate_type == 'qrcode' else 'Barcode'} generation error", 500
-
-        response = send_file(io.BytesIO(data), mimetype=mimetype)
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-
-        logger.info(f"Successfully generated {generate_type}")
-        return response
-
+        data, mimetype = render_type(generate_type, content, options)
+    except codes.CodeError as e:
+        logger.warning(f"Invalid input for {generate_type}: {e}")
+        return str(e), 400
     except Exception as e:
-        logger.error(f"Unexpected error in generate_code: {str(e)}", exc_info=True)
-        return "Internal server error", 500
+        logger.error(f"{generate_type} generation failed: {type(e).__name__}", exc_info=True)
+        return f"{'QR code' if generate_type == 'qrcode' else 'Barcode'} generation error", 500
+
+    response = send_file(io.BytesIO(data), mimetype=mimetype)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    logger.info(f"Successfully generated {generate_type}")
+    return response
+
+
+@app.route("/gs1/digital-link")
+@limiter.limit(lambda: config.GENERATE_RATE_LIMIT)
+def gs1_digital_link() -> Union[Response, Tuple[Response, int]]:
+    """Validate GS1 fields and return the Digital Link URI and element string as JSON."""
+    try:
+        item = gs1.build(request.args)
+        uri = item.digital_link(request.args.get("domain") or gs1.DEFAULT_RESOLVER)
+    except codes.CodeError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(
+        {
+            "uri": uri,
+            "element_string": item.element_string(),
+            "ais": item.ais(),
+        }
+    )
 
 
 @app.route("/apispec.json")

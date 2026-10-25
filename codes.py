@@ -13,6 +13,7 @@ has always produced, so existing report formulas keep printing the same output.
 """
 
 import io
+import re
 from dataclasses import dataclass
 from html import escape
 from typing import Mapping, Optional, Tuple
@@ -262,6 +263,16 @@ def _render_ean13(content: str, opts: RenderOptions) -> bytes:
     buf = io.BytesIO()
     Image.frombytes("L", (width, height), bytes(memoryview(raw))).save(buf, format="PNG")
     return buf.getvalue()
+
+
+def render_gs1_datamatrix(element_string: str, opts: RenderOptions) -> Tuple[bytes, str]:
+    """GS1 Data Matrix (FNC1, ]d2) from a parenthesised element string like (01)...(10)..."""
+    values = re.findall(r"\(\d{2}\)([^(]*)", element_string)
+    if element_string.count("(") != len(values) or any(")" in v for v in values):
+        raise CodeError(
+            "Parentheses in batch/serial are not supported in GS1 Data Matrix; use gs1qr"
+        )
+    return _render_datamatrix(element_string, opts, gs1=True), FORMATS[opts.format]
 
 
 def render(kind: str, content: str, opts: RenderOptions) -> Tuple[bytes, str]:

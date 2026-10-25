@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `format=svg` for every type; `scale`, `size`, `border`, `ec` (QR error correction) and `text` options
 - `codes.py`: rendering independent of Flask, shared by the API and the upcoming MCP server
 - Tests decode every generated image with zxing-cpp; `docs/v0.2-plan.md` describes the v0.2 roadmap
+- GS1 Digital Link: `GET /gs1/digital-link` validates GTIN (check digit), batch/serial (CSET 82) and dates (`YYMMDD` or `YYYY-MM-DD`), and returns the URI, element string and AIs; `type=gs1qr` and `type=gs1datamatrix` (true GS1 `]d2` with FNC1) in `/generate`; custom resolver via `domain`
+- `gs1.py` (pure, no dependencies) with Digital Link parsing, and shared GS1 test vectors in `tests/gs1_vectors.json`
 
 ### Fixed
 - QR content beyond capacity returned 500 (qrcode 8 raises `ValueError`, not `DataOverflowError`); now a 400 with a clear message

@@ -214,6 +214,33 @@ curl "http://localhost:8505/generate?content=LOT-42&type=datamatrix&scale=4&bord
 Without the new parameters, QR codes and Code 128 are byte-for-byte identical to earlier versions.
 不带新参数时，二维码和 Code 128 的输出与旧版本完全一致，已有的报表公式无需修改。
 
+### GS1 Digital Link and GS1 Data Matrix / GS1 数字链接与 GS1 Data Matrix
+
+For GS1 Sunrise 2027 (2D codes at retail POS) and traceability. The GTIN check digit, the batch/serial
+character set (GS1 CSET 82, max 20) and dates are validated; dates accept `YYMMDD` or `YYYY-MM-DD`.
+面向 GS1 Sunrise 2027（零售 POS 识读 2D 码）与追溯。会校验 GTIN 校验位、批号/序列号字符集与日期。
+
+```bash
+# Validate fields and get the Digital Link URI + element string (JSON)
+curl "http://localhost:8505/gs1/digital-link?gtin=9506000134352&batch=ABC123&expiry=2027-12-31"
+
+# QR code with the Digital Link (scannable by phones and 2D POS scanners)
+curl "http://localhost:8505/generate?type=gs1qr&gtin=9506000134352&batch=ABC123&expiry=2027-12-31" > gs1qr.png
+
+# Same data as a GS1 Data Matrix (FNC1), on your own resolver domain for the QR variant
+curl "http://localhost:8505/generate?type=gs1datamatrix&gtin=9506000134352&batch=ABC123&expiry=271231" > gs1dm.png
+curl "http://localhost:8505/generate?type=gs1qr&gtin=9506000134352&domain=https://id.example.com" > own.png
+```
+
+| Field | GS1 AI | SAP Business One |
+| :--- | :--- | :--- |
+| `gtin` | 01 | `OITM.CodeBars` |
+| `batch` (`lot`) | 10 | `OBTN.DistNumber` |
+| `serial` | 21 | `OSRN.DistNumber` |
+| `prod_date` / `pack_date` / `best_before` / `expiry` | 11 / 13 / 15 / 17 | `OBTN.MnfDate` / — / — / `OBTN.ExpDate` |
+
+`tests/gs1_vectors.json` holds shared test vectors that other implementations (e.g. QRprint) can reuse.
+
 ## API Reference / API 参考
 
 ### `GET /generate`
