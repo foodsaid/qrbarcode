@@ -25,30 +25,31 @@ We will respond within 48 hours and provide updates every 5 business days.
 
 ## Security Features
 
-This project implements:
+- **Input validation**: content length and type are checked; barcodes accept ASCII only. Generation errors return a generic message without exception details.
+- **Rate limiting**: 100 requests/minute per client IP globally, 50/minute on `/generate`. Behind a reverse proxy set `PROXY_COUNT` so the real client IP is counted.
+- **Security headers on every response**: `Content-Security-Policy` (`default-src 'none'` for the API; same-origin scripts only for `/docs`, no inline script), `X-Frame-Options: DENY` / `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`.
+- **Log privacy**: logs record type, length and status, never the encoded content or query string.
+- **Container**: non-root `USER 1000:1000`, no pip in the runtime image, base image pinned by digest. Docker Compose runs it with a read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, and memory/CPU/PID limits.
+- **gunicorn**: threaded workers so idle connections cannot exhaust the pool; the runtime control socket is disabled.
+- **Supply chain**: hash-pinned Python dependencies with a 14-day release cooldown; GitHub Actions, the base image and pre-commit hooks pinned by SHA/digest; only allowlisted actions may run.
+- **Continuous checks** (every push and weekly): pip-audit, Trivy on the repository and the built image, OSV check of the vendored Swagger UI and its bundled DOMPurify, copyleft license check, bandit, CodeQL, Dependabot alerts, secret scanning with push protection.
 
-- **Input Validation**: All user inputs are validated and sanitized
-- **Rate Limiting**: 100 requests/minute globally, 50 requests/minute on `/generate` (configurable via environment variables)
-- **Security Headers**:
-  - Content-Security-Policy
-  - X-Frame-Options: DENY
-  - X-Content-Type-Options: nosniff
-  - X-XSS-Protection
-- **CORS Configuration**: Controlled cross-origin access
-- **Docker Security**: Non-root user execution, base image pinned by digest
-- **Supply Chain**: Hash-pinned dependencies with a 14-day release cooldown, audited by pip-audit in CI
-- **Logging**: Comprehensive request and error logging
-- **No Hardcoded Secrets**: All sensitive data via environment variables
+## Known and Accepted Risks
 
-## Security Best Practices
+| Item | Why it is accepted |
+| :--- | :--- |
+| DOMPurify 3.4.13 bundled in Swagger UI 5.33.1 has advisories (incl. GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr) | They need `SAFE_FOR_TEMPLATES` or `IN_PLACE`, which Swagger UI never enables, and only this project's own `openapi.json` is rendered (`queryConfigEnabled: false`). Reviewed in `scripts/vendored_vuln_allowlist.json`; upgrade once a Swagger UI release bundles DOMPurify 3.4.17+. |
+| Rate limits are in memory, per gunicorn worker (2 workers) | The effective limit per IP is up to 2× the configured value. Use a shared store (e.g. Redis via `limits`) if exact limits matter. |
+| `Access-Control-Allow-Origin: *` | Public, read-only GET API with no cookies or authentication. |
+| The service is reachable by anyone who knows the URL | Intended for embedding in reports. To restrict it, put access control in front (e.g. Cloudflare Access or an IP allowlist). |
 
-When deploying this service:
+## Deployment Checklist
 
-1. **Environment Variables**: Never commit sensitive data
-2. **HTTPS**: Always use HTTPS in production
-3. **Rate Limiting**: Configure appropriate limits for your use case
-4. **Updates**: Keep dependencies up-to-date (enable Dependabot)
-5. **Monitoring**: Enable logging and monitor for suspicious activity
+1. Bind the port to localhost (`QR_HOST_PORT=127.0.0.1:8505`) when a reverse proxy or tunnel fronts the service, and set `PROXY_COUNT=1`.
+2. Serve over HTTPS only and enable HSTS at the proxy (e.g. Cloudflare: SSL/TLS → Edge Certificates → HSTS, and "Always Use HTTPS").
+3. Keep the compose hardening (`read_only`, `cap_drop`, `no-new-privileges`, resource limits).
+4. Redeploy after each release (`make docker-deploy`) so base image and dependency fixes reach production.
+5. Never commit `.env` or other secrets; push protection blocks known secret formats.
 
 ## Acknowledgments
 

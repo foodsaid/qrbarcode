@@ -11,6 +11,14 @@ services:
       - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
       - PROXY_COUNT=${PROXY_COUNT:-0}
     restart: unless-stopped
+    # Least privilege: read-only root FS, no Linux capabilities, no privilege escalation
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     stop_grace_period: 30s
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health').read()" ]
@@ -23,6 +31,7 @@ services:
         limits:
           cpus: '0.5'
           memory: 256M
+          pids: 128
         reservations:
           cpus: '0.1'
           memory: 64M

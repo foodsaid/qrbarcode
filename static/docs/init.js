@@ -2,6 +2,8 @@
 window.addEventListener("load", function () {
   window.ui = SwaggerUIBundle({
     url: "/apispec.json",
+    // Never let ?url= / ?configUrl= load someone else's spec into this page
+    queryConfigEnabled: false,
     dom_id: "#swagger-ui",
     deepLinking: true,
     presets: [SwaggerUIBundle.presets.apis],

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-10-25
+
+### Security
+- Security headers on every response (was `/generate` only): CSP (`default-src 'none'` for the API; same-origin scripts only for `/docs`), `X-Frame-Options: DENY` / `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`; `X-XSS-Protection` set to `0` as browsers no longer support the auditor
+- Generation errors no longer echo exception text to clients
+- gunicorn uses threaded workers (`gthread`, 2×4) so idle connections can no longer tie up every worker until the 30 s timeout; the gunicorn 26 control socket is disabled
+- Docker Compose runs the container with a read-only root filesystem, `cap_drop: ALL`, `no-new-privileges` and a PID limit
+- Swagger UI `queryConfigEnabled: false` is now explicit, so `?url=` cannot load a foreign spec
+- New CI check of the vendored Swagger UI and its bundled DOMPurify against OSV, with reviewed advisories in `scripts/vendored_vuln_allowlist.json`; CI also runs weekly
+- `SECURITY.md` documents the protections, known and accepted risks, and a deployment checklist
+
+### Fixed
+- `scripts/deploy_local.sh` and `run_local.sh` are executable again (`make docker-deploy` failed with "Permission denied")
+
+---
+
 ## [0.1.4] - 2026-10-25
 
 ### Added
@@ -172,6 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.1.5]: https://github.com/foodsaid/qrbarcode/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/foodsaid/qrbarcode/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/foodsaid/qrbarcode/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/foodsaid/qrbarcode/compare/v0.1.1...v0.1.2

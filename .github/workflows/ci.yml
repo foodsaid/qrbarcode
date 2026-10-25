@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  # Weekly re-scan so newly published advisories surface without a push
+  schedule:
+    - cron: '17 2 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -147,6 +151,10 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+    # Swagger UI and the DOMPurify copy in its bundle are invisible to pip-audit/Dependabot
+    - name: Check vendored front-end code against OSV
+      run: python3 scripts/check_vendored.py
 
     # Results go to the job log
     - name: Run Trivy vulnerability scanner

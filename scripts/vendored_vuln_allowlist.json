@@ -1,0 +1,8 @@
+{
+  "_comment": "Reviewed advisories for vendored front-end code. Remove an entry once the vendored version no longer has it.",
+  "GHSA-cg2g-xh64-v4q7": "DOMPurify SAFE_FOR_TEMPLATES bypass. Swagger UI never enables SAFE_FOR_TEMPLATES, and only our own openapi.json is sanitized (queryConfigEnabled is false). Fixed in DOMPurify 3.4.17; no Swagger UI release bundles it yet.",
+  "GHSA-mrv2-3pqr-j5jr": "DOMPurify IN_PLACE hook issue. Swagger UI never uses IN_PLACE or sanitize hooks. Fixed in DOMPurify 3.4.17.",
+  "GHSA-c6gr-qvv4-5v3f": "DOMPurify SMIL guard with PARSER_MEDIA_TYPE application/xhtml+xml. Swagger UI uses the default text/html parser. Fixed in DOMPurify 3.4.17.",
+  "GHSA-6688-9rhm-gjv2": "DOMPurify IN_PLACE rawtext root. IN_PLACE is not used. Fixed in DOMPurify 3.4.16 (Swagger UI 5.34.0).",
+  "GHSA-p98j-92pf-mc4p": "DOMPurify IN_PLACE afterSanitize hook. IN_PLACE and hooks are not used. Fixed in DOMPurify 3.4.16 (Swagger UI 5.34.0)."
+}
