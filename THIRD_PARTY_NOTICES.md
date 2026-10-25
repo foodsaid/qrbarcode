@@ -27,6 +27,7 @@ Pinned in `requirements.txt`.
 | gunicorn | MIT |
 | qrcode | BSD |
 | python-barcode | MIT |
+| zxing-cpp (Data Matrix, EAN-13, GS1; bundles [libzint](https://github.com/zint/zint), BSD-3-Clause) | Apache-2.0 |
 | Pillow | MIT-CMU (HPND) |
 | Deprecated | MIT |
 | wrapt | BSD-2-Clause |

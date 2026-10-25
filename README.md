@@ -184,6 +184,36 @@ curl "http://localhost:8505/generate?content=ABC123&type=barcode" > barcode.png
 curl "http://localhost:8505/generate?content=123456789&type=barcode" > barcode.png
 ```
 
+### Data Matrix, EAN-13, SVG and Size / Data Matrix、EAN-13、SVG 与尺寸
+
+```bash
+# Data Matrix (small parts, pharma, fresh food traceability)
+curl "http://localhost:8505/generate?content=LOT-42&type=datamatrix" > dm.png
+
+# EAN-13: 12 digits get the check digit, 13 digits are verified
+curl "http://localhost:8505/generate?content=590123412345&type=ean13" > ean13.png
+
+# Vector SVG for print; error correction Q for worn packaging
+curl "http://localhost:8505/generate?content=Hello&format=svg&ec=Q" > qr.svg
+
+# Fixed pixel size (largest whole scale that fits 300 px) or exact pixels per module
+curl "http://localhost:8505/generate?content=Hello&size=300" > qr300.png
+curl "http://localhost:8505/generate?content=LOT-42&type=datamatrix&scale=4&border=2" > dm4.png
+```
+
+| Parameter | Values | Default |
+| :--- | :--- | :--- |
+| `type` | `qrcode`, `barcode` (Code 128), `datamatrix`, `ean13` | `qrcode` |
+| `format` | `png`, `svg` | `png` |
+| `scale` | 1–40 pixels per module (not with `size`) | per type |
+| `size` | 64–4096 px target width (not with `scale`) | — |
+| `border` | 0–10 modules of quiet zone (not for EAN-13) | QR / Data Matrix 1 |
+| `ec` | `L`, `M`, `Q`, `H` (QR only) | `L` |
+| `text` | `true`, `false` (1D codes) | `true` |
+
+Without the new parameters, QR codes and Code 128 are byte-for-byte identical to earlier versions.
+不带新参数时，二维码和 Code 128 的输出与旧版本完全一致，已有的报表公式无需修改。
+
 ## API Reference / API 参考
 
 ### `GET /generate`

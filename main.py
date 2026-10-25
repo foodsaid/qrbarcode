@@ -12,14 +12,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Tuple, Union
 
-import barcode
-import qrcode
-from barcode.writer import ImageWriter
 from flask import Flask, Response, jsonify, redirect, request, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.wrappers import Response as WerkzeugResponse
+
+import codes
 
 __version__ = "0.1.5"
 
@@ -31,9 +30,7 @@ class Config:
     MAX_CONTENT_LENGTH: int = 1000
     BARCODE_MAX_LENGTH: int = 64
     DEFAULT_PORT: int = 8080
-    ALLOWED_TYPES: set = field(default_factory=lambda: {"qrcode", "barcode"})
-    QR_BORDER_SIZE: int = 1
-    QR_BOX_SIZE: int = 10
+    ALLOWED_TYPES: set = field(default_factory=lambda: set(codes.KINDS))
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT: str = "100 per minute"  # Global default per client IP
     GENERATE_RATE_LIMIT: str = "50 per minute"  # Per client IP on /generate
@@ -42,13 +39,6 @@ class Config:
     # X-Forwarded-For / X-Forwarded-Proto are trusted so rate limits count real client IPs.
     # Only set this when the port is reachable through those proxies alone.
     PROXY_COUNT: int = 0
-    # Barcode options - reduce margins to save paper
-    BARCODE_MODULE_WIDTH: float = 0.3  # Width of one barcode module in mm
-    BARCODE_MODULE_HEIGHT: float = 15.0  # Height of barcode bars in mm
-    BARCODE_QUIET_ZONE: float = 3.0  # Minimal quiet zone on left/right in mm
-    BARCODE_FONT_SIZE: int = 12  # Font size for text below barcode
-    BARCODE_TEXT_DISTANCE: float = 6.0  # Distance between barcode and text in mm
-    BARCODE_MARGIN_TOP: float = 3.0  # Top margin in mm
     # API docs servers. Empty host = no servers list, so Swagger UI calls the docs page's own
     # scheme and host. Schemes only apply when SWAGGER_HOST is set; the first is the default.
     SWAGGER_HOST: str = ""
@@ -108,7 +98,7 @@ def validate_input(content: str, generate_type: str) -> Tuple[bool, str]:
 
     Args:
         content: The text content to encode
-        generate_type: Type of code to generate ('qrcode' or 'barcode')
+        generate_type: Type of code to generate (one of codes.KINDS)
 
     Returns:
         Tuple of (is_valid, error_message)
@@ -130,8 +120,7 @@ def validate_input(content: str, generate_type: str) -> Tuple[bool, str]:
         # Check if all characters are printable ASCII (Code128 supports ASCII 0-127)
         if not all(0 <= ord(char) < 128 for char in content):
             return False, "Barcode content must contain only ASCII characters"
-    else:
-        # QR code validation
+    elif generate_type != "ean13":  # EAN-13 is checked digit by digit in codes.py
         if len(content) > config.MAX_CONTENT_LENGTH:
             return (
                 False,
@@ -219,48 +208,22 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
             )
             return error_msg, 400
 
-        # Create image buffer
-        buf = io.BytesIO()
+        try:
+            options = codes.parse_options(request.args)
+        except codes.CodeError as e:
+            return str(e), 400
 
-        if generate_type == "barcode":
-            # Generate Barcode (Code128)
-            logger.info(f"Generating barcode (length={len(content)})")
-            try:
-                code128 = barcode.get("code128", content, writer=ImageWriter())
-                code128.write(
-                    buf,
-                    options={
-                        "module_width": config.BARCODE_MODULE_WIDTH,
-                        "module_height": config.BARCODE_MODULE_HEIGHT,
-                        "quiet_zone": config.BARCODE_QUIET_ZONE,
-                        "font_size": config.BARCODE_FONT_SIZE,
-                        "text_distance": config.BARCODE_TEXT_DISTANCE,
-                        "margin_top": config.BARCODE_MARGIN_TOP,
-                    },
-                )
-            except Exception as e:
-                logger.error(f"Barcode generation failed: {type(e).__name__}")
-                return "Barcode generation error", 500
-        else:
-            # Generate QR code
-            logger.info(f"Generating QR code (length={len(content)})")
-            try:
-                qr = qrcode.QRCode(
-                    border=config.QR_BORDER_SIZE,
-                    box_size=config.QR_BOX_SIZE,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                )
-                qr.add_data(content)
-                qr.make(fit=True)
-                img = qr.make_image(fill_color="black", back_color="white")
-                img.save(buf, format="PNG")
-            except Exception as e:
-                logger.error(f"QR code generation failed: {type(e).__name__}")
-                return "QR code generation error", 500
+        logger.info(f"Generating {generate_type} (length={len(content)}, format={options.format})")
+        try:
+            data, mimetype = codes.render(generate_type, content, options)
+        except codes.CodeError as e:
+            logger.warning(f"Invalid input: {e} - length={len(content)}, type={generate_type}")
+            return str(e), 400
+        except Exception as e:
+            logger.error(f"{generate_type} generation failed: {type(e).__name__}")
+            return f"{'QR code' if generate_type == 'qrcode' else 'Barcode'} generation error", 500
 
-        # Prepare response
-        buf.seek(0)
-        response = send_file(buf, mimetype="image/png")
+        response = send_file(io.BytesIO(data), mimetype=mimetype)
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
 
         logger.info(f"Successfully generated {generate_type}")
