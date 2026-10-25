@@ -137,7 +137,7 @@ curl http://localhost:8505/metrics
 ```json
 {
   "status": "healthy",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "config": {
     "max_content_length": 1000,
     "rate_limit": "100 per minute",
@@ -273,6 +273,49 @@ It does **not** stop someone from photocopying a genuine code (that needs per-it
 
 Public keys for offline verification are at `/.well-known/qr-signing-keys.json` (JWKS, Ed25519).
 To rotate, create a new key, list the old public key in `SIGNING_PUBLIC_KEY_FILES`, and old codes keep verifying.
+
+### MCP Server for AI Assistants / 给 AI 助手用的 MCP 服务器
+
+`qr_mcp.py` lets Claude (or any MCP client) generate codes directly. It runs locally over stdio,
+needs no network and no server, and uses its own hash-pinned dependencies (not in the Docker image).
+让 Claude 等 AI 助手直接生成二维码：本地 stdio 运行，无需联网，不在 Docker 镜像里。
+
+| Tool | What it does |
+| :--- | :--- |
+| `generate_code` | QR, Code 128, Data Matrix or EAN-13 as a PNG image or SVG text, with all size options |
+| `generate_gs1_code` | GS1 Digital Link QR or GS1 Data Matrix from GTIN, batch, serial and dates |
+| `build_gs1_digital_link` | Validate GS1 data and return the URI, element string and AIs |
+| `verify_signed_code` | Check a scanned signed URL (keys from `QR_SIGNING_JWKS`) |
+
+All tools are read-only; signing is not exposed (the private key stays on the HTTP server).
+
+```bash
+python3 -m venv ~/.venvs/qrbarcode-mcp
+~/.venvs/qrbarcode-mcp/bin/pip install --require-hashes -r requirements-mcp.txt
+
+# Claude Code
+claude mcp add --transport stdio --scope user qrbarcode \
+  -- ~/.venvs/qrbarcode-mcp/bin/python /path/to/qrbarcode/qr_mcp.py
+
+# Optional: verify signed codes against your server's public keys
+claude mcp add --env QR_SIGNING_JWKS=https://qr.example.com/.well-known/qr-signing-keys.json \
+  --transport stdio --scope user qrbarcode \
+  -- ~/.venvs/qrbarcode-mcp/bin/python /path/to/qrbarcode/qr_mcp.py
+```
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "qrbarcode": {
+      "command": "/home/you/.venvs/qrbarcode-mcp/bin/python",
+      "args": ["/path/to/qrbarcode/qr_mcp.py"],
+      "env": {"QR_SIGNING_JWKS": "https://qr.example.com/.well-known/qr-signing-keys.json"}
+    }
+  }
+}
+```
 
 ## API Reference / API 参考
 

@@ -654,7 +654,7 @@
           },
           "version": {
             "type": "string",
-            "example": "0.1.5"
+            "example": "0.2.0"
           },
           "config": {
             "type": "object",

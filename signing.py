@@ -103,6 +103,18 @@ class KeyRing:
             public_keys.append(public)
         return cls(signing_key, public_keys)
 
+    @classmethod
+    def from_jwks(cls, jwks: dict) -> "KeyRing":
+        """Verify-only ring from a JWKS document (e.g. /.well-known/qr-signing-keys.json)."""
+        keys = []
+        for jwk in jwks.get("keys", []):
+            if jwk.get("kty") == "OKP" and jwk.get("crv") == "Ed25519":
+                key = Ed25519PublicKey.from_public_bytes(unb64url(jwk["x"]))
+                if "kid" in jwk and jwk["kid"] != key_id(key):
+                    raise ValueError(f"JWKS kid {jwk['kid']} does not match its key")
+                keys.append(key)
+        return cls(public_keys=keys)
+
     @property
     def can_sign(self) -> bool:
         """Whether a private key is configured."""

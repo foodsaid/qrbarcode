@@ -29,10 +29,12 @@ install-dev: ## Install development dependencies (hash-pinned)
 
 lock: ## Regenerate hash-pinned requirements*.txt from requirements*.in (needs uv)
 	$(UV_LOCK) requirements.in -o requirements.txt
+	$(UV_LOCK) requirements-mcp.in -o requirements-mcp.txt
 	$(UV_LOCK) requirements-dev.in -o requirements-dev.txt
 
 audit: ## Check locked dependencies for known vulnerabilities
 	pip-audit --strict --require-hashes --disable-pip -r requirements.txt
+	pip-audit --strict --require-hashes --disable-pip -r requirements-mcp.txt
 	pip-audit --strict --require-hashes --disable-pip -r requirements-dev.txt
 
 test: ## Run tests

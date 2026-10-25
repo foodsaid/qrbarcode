@@ -1,0 +1,6 @@
+# MCP server (qr_mcp.py) for AI assistants. Not part of the Docker image.
+# Edit this file, then run `make lock`.
+-c requirements.txt
+-r requirements.in
+
+mcp==2.3.0

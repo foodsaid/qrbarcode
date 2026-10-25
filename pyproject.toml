@@ -31,6 +31,7 @@ addopts = [
     "--cov=codes",
     "--cov=gs1",
     "--cov=signing",
+    "--cov=qr_mcp",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-fail-under=80",

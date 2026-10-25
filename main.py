@@ -25,7 +25,7 @@ import signing
 # Built from GS1 fields (gtin, batch, serial, dates) instead of `content`
 GS1_TYPES = {"gs1qr", "gs1datamatrix"}
 
-__version__ = "0.1.5"
+__version__ = "0.2.0"
 
 
 @dataclass
