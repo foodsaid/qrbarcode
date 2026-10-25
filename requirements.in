@@ -1,0 +1,15 @@
+# Direct production dependencies. Edit this file, then run `make lock`
+# to regenerate the hash-pinned requirements.txt.
+
+flask==3.1.3
+flasgger==0.9.7.1
+Flask-Limiter==4.1.1
+qrcode[pil]==8.2
+gunicorn==26.2.0
+python-barcode==0.16.1
+
+# Security floors for transitive dependencies (OSV, 2026-10-25).
+# These are allowed to be newer than the 14-day cooldown in `make lock`.
+pillow>=13.0.0
+werkzeug>=3.1.9
+mistune>=3.3.0

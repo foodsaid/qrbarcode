@@ -5,7 +5,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 一个基于 Python Flask 和 Docker 构建的轻量级微服务，用于生成二维码（打印优化）和条形码（Code128）。支持离线部署。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
 ## Features / 功能
 
@@ -27,7 +27,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 - Docker Compose (optional / 可选)
 
 ### For Local Development / 本地开发
-- Python 3.13+
+- Python 3.11+ (3.13 recommended / 推荐 3.13)
 - pip 23.0+
 
 ## Quick Start / 快速开始
@@ -95,7 +95,7 @@ make docker-prune-dangling
 
 ```bash
 # Install dependencies / 安装依赖
-pip install -r requirements.txt
+pip install --require-hashes -r requirements.txt
 
 # Run the service / 运行服务
 python main.py
@@ -137,7 +137,7 @@ curl http://localhost:8080/metrics
 ```json
 {
   "status": "healthy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "config": {
     "max_content_length": 1000,
     "rate_limit": "100 per minute",
@@ -264,7 +264,7 @@ make all                   # Clean, install, QA, Docker build
 
 ```bash
 # Install development dependencies / 安装开发依赖
-pip install -r requirements-dev.txt
+pip install --require-hashes -r requirements-dev.txt
 
 # Run all tests / 运行所有测试
 pytest
@@ -404,6 +404,13 @@ QR codes use `box_size=10` and `border=1` for print optimization. To customize:
 - **Non-root user**: Docker container runs as non-root user
 - **No secrets**: No hardcoded credentials or API keys
 - **Log privacy**: Logs record type, length and status only, never the encoded content or query string / 日志只记录类型、长度和状态，不记录编码内容和查询参数
+
+## Dependency Management / 依赖管理
+
+- `requirements.txt` / `requirements-dev.txt` are hash-pinned lock files generated from `requirements*.in` by `make lock`; installs use `--require-hashes`. / 锁定文件由 `make lock` 从 `requirements*.in` 生成，带哈希校验。
+- **14-day cooldown / 14 天冷却期**: new locks only accept releases at least 14 days old, so a freshly published (possibly compromised) package version is not picked up. Security fixes are the only exception. / 只采用发布满 14 天的版本，降低新发布恶意版本的风险；仅安全修复例外。
+- The Docker base image, GitHub Actions and pre-commit hooks are pinned by digest / commit SHA. / 基础镜像、Actions、pre-commit 钩子均按 digest/SHA 固定。
+- Dependabot proposes weekly updates with the same cooldown; CI runs `pip-audit` and Trivy on every push. / Dependabot 每周按同样冷却期提更新，CI 每次推送都运行 pip-audit 和 Trivy。
 
 ## Configuration / 配置
 

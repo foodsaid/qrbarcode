@@ -18,7 +18,7 @@ from flask import Flask, Response, jsonify, request, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 @dataclass
@@ -222,7 +222,7 @@ def metrics() -> Response:
               example: healthy
             version:
               type: string
-              example: 0.1.0
+              example: 0.1.1
             config:
               type: object
               properties:

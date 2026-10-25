@@ -1,7 +1,17 @@
-.PHONY: help install install-dev test coverage lint format type-check security clean docker-build docker-run docker-stop docs run docker-network docker-deploy docker-redeploy docker-rollback docker-status docker-images docker-prune-dangling
+.PHONY: help install install-dev lock audit test coverage lint format type-check security clean docker-build docker-run docker-stop docs run docker-network docker-deploy docker-redeploy docker-rollback docker-status docker-images docker-prune-dangling
 
 # Default target
 .DEFAULT_GOAL := help
+
+# Lock files only take releases at least this old (supply-chain cooldown).
+LOCK_COOLDOWN ?= 14 days
+# Packages whose only non-vulnerable release is newer than the cooldown.
+# Remove an entry once that release is older than LOCK_COOLDOWN.
+LOCK_SECURITY_EXCEPTIONS ?= pillow virtualenv filelock certifi
+UV_LOCK = uv pip compile --quiet --universal --python-version 3.11 --generate-hashes \
+	--exclude-newer "$(LOCK_COOLDOWN)" \
+	$(foreach p,$(LOCK_SECURITY_EXCEPTIONS),--exclude-newer-package "$(p)=false") \
+	--custom-compile-command "make lock"
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -9,12 +19,20 @@ help: ## Show this help message
 	@echo 'Available targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-install: ## Install production dependencies
-	pip install -r requirements.txt
+install: ## Install production dependencies (hash-pinned)
+	pip install --require-hashes -r requirements.txt
 
-install-dev: install ## Install development dependencies
-	pip install -r requirements-dev.txt
+install-dev: ## Install development dependencies (hash-pinned)
+	pip install --require-hashes -r requirements-dev.txt
 	pre-commit install
+
+lock: ## Regenerate hash-pinned requirements*.txt from requirements*.in (needs uv)
+	$(UV_LOCK) requirements.in -o requirements.txt
+	$(UV_LOCK) requirements-dev.in -o requirements-dev.txt
+
+audit: ## Check locked dependencies for known vulnerabilities
+	pip-audit --strict --require-hashes --disable-pip -r requirements.txt
+	pip-audit --strict --require-hashes --disable-pip -r requirements-dev.txt
 
 test: ## Run tests
 	pytest
@@ -44,7 +62,7 @@ type-check: ## Run type checking with mypy
 
 security: ## Run security checks
 	bandit -r main.py
-	safety check
+	$(MAKE) audit
 
 qa: lint type-check security test ## Run all quality assurance checks
 
@@ -119,13 +137,8 @@ run-dev: ## Run the application in development mode
 pre-commit: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
 
-update-deps: ## Update dependencies to latest versions
+update-deps: ## List outdated packages (bump them in requirements*.in, then run `make lock`)
 	pip list --outdated
-	@echo "Run 'pip install --upgrade <package>' to update specific packages"
-
-freeze: ## Freeze current dependencies
-	pip freeze > requirements-frozen.txt
-	@echo "✓ Dependencies frozen to requirements-frozen.txt"
 
 venv: ## Create virtual environment
 	python3 -m venv venv

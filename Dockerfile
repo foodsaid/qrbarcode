@@ -1,21 +1,21 @@
-# Multi-stage build for optimized image size
-FROM python:3.13-slim AS builder
+# Multi-stage build for optimized image size.
+# Base image is pinned by digest; Dependabot proposes digest updates.
+FROM python:3.13-slim@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e071763d17725460962 AS builder
 
 # Install dependencies in builder stage
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --user --require-hashes -r requirements.txt
 
 # Final production image
-FROM python:3.13-slim
+FROM python:3.13-slim@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e071763d17725460962
 
 # Python runtime optimizations: unbuffered logs, no .pyc files
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Upgrade base image pip (security fixes) and create non-root user
-RUN pip install --no-cache-dir --upgrade "pip>=26.2" && \
-    useradd -m -u 1000 appuser && \
+# Create non-root user (no network installs here: everything comes from the hash-pinned builder)
+RUN useradd -m -u 1000 appuser && \
     mkdir -p /app && \
     chown -R appuser:appuser /app
 
