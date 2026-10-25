@@ -82,5 +82,5 @@ exclude_dirs = ["tests", "venv", ".venv"]
 skips = ["B101"]  # Skip assert_used check
 
 [build-system]
-requires = ["setuptools>=68.0"]
+requires = ["setuptools>=84.0.0"]
 build-backend = "setuptools.build_meta"
