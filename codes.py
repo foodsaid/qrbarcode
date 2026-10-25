@@ -166,8 +166,9 @@ def _zxing_matrix(content: str, fmt, **kwargs) -> Image.Image:
     """Create a symbol with zxing-cpp and return it at one pixel per module, no quiet zone."""
     try:
         symbol = zxingcpp.create_barcode(content, fmt, **kwargs)
-    except ValueError as e:
-        raise CodeError(f"Cannot encode content: {e}") from None
+    except ValueError:
+        # zxing-cpp's own message is library internals; keep client errors to our wording
+        raise CodeError("Cannot encode this content in the requested symbol") from None
     raw = symbol.to_image(scale=1, add_quiet_zones=False)
     height, width = raw.shape
     return Image.frombytes("L", (width, height), bytes(memoryview(raw)))
@@ -247,10 +248,11 @@ def normalize_ean13(content: str) -> str:
 def _render_ean13(content: str, opts: RenderOptions) -> bytes:
     if opts.border is not None:
         raise CodeError("'border' is fixed by the EAN-13 specification")
+    digits = normalize_ean13(content)
     try:
-        symbol = zxingcpp.create_barcode(normalize_ean13(content), zxingcpp.BarcodeFormat.EAN13)
-    except ValueError as e:
-        raise CodeError(f"Cannot encode content: {e}") from None
+        symbol = zxingcpp.create_barcode(digits, zxingcpp.BarcodeFormat.EAN13)
+    except ValueError:
+        raise CodeError("Cannot encode this content as EAN-13") from None
     if opts.size is not None:
         # EAN-13 is 113 modules wide including its specified quiet zones
         scale = _fit_scale(opts.size, 113)

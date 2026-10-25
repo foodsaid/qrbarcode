@@ -7,6 +7,7 @@ import io
 import os
 import subprocess  # nosec B404 - runs our own script in a temp dir
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -76,6 +77,19 @@ class TestKeyRing:
         """Test that parameters appended after sig are rejected, not ignored."""
         result = ring.verify(ring.sign(DL) + "&x=1")
         assert not result.valid and "last parameters" in result.reason
+
+    def test_verify_is_linear_on_hostile_input(self, ring):
+        """Test that a long crafted URL is rejected fast (no regex backtracking over the base)."""
+        hostile = "https://" * 500 + "?kid=" + "A" * 11 + "&sig=" + "!" * 86
+        start = time.perf_counter()
+        assert not ring.verify(hostile).valid
+        assert time.perf_counter() - start < 0.05
+
+    @pytest.mark.parametrize("bad_base", ["http://x.example/a", "https://", "https://a b/c"])
+    def test_verify_rejects_bad_base(self, ring, bad_base):
+        """Test that the unsigned part must be a plain https URL."""
+        tail = ring.sign("https://x.example/a")[-signing.TAIL_LENGTH :]
+        assert not ring.verify(bad_base + tail).valid
 
     def test_other_key_is_unknown(self, ring):
         """Test that a code signed by someone else's key is not accepted."""
@@ -184,9 +198,11 @@ class TestGenSigningKey:
         key = tmp_path / "secrets" / "signing_key.pem"
         result = self.run(key)
         assert result.returncode == 0, result.stderr
+        api_key_file = key.with_suffix(".apikey")
         assert os.stat(key).st_mode & 0o777 == 0o600
-        lines = dict(line.split(":", 1) for line in result.stdout.splitlines() if " : " in line)
-        api_key = lines["API key     "].split()[0]
+        assert os.stat(api_key_file).st_mode & 0o777 == 0o600
+        api_key = api_key_file.read_text().strip()
+        assert api_key not in result.stdout  # never printed
         printed_hash = result.stdout.split("SIGNING_API_KEY_HASHES=")[1].strip()
         assert printed_hash == hashlib.sha256(api_key.encode()).hexdigest()
         assert KeyRing.from_files(str(key)).can_sign

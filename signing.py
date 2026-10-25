@@ -28,9 +28,10 @@ from codes import CodeError
 
 DOMAIN_TAG = b"qrbarcode-sig-v1\n"
 MAX_URL_LENGTH = 1000
-SIGNED_URL = re.compile(
-    r"(?P<base>https://[^\s#]+?)[?&]kid=(?P<kid>[A-Za-z0-9_-]{11})&sig=(?P<sig>[A-Za-z0-9_-]{86})"
-)
+# Fixed-length tail "?kid=<11>&sig=<86>" (or "&kid=..."): matched on the last 107 characters
+# only, so verification stays linear in the URL length (no backtracking over the base URL)
+SIGNATURE_TAIL = re.compile(r"[?&]kid=(?P<kid>[A-Za-z0-9_-]{11})&sig=(?P<sig>[A-Za-z0-9_-]{86})")
+TAIL_LENGTH = 1 + len("kid=") + 11 + len("&sig=") + 86
 
 
 def b64url(data: bytes) -> str:
@@ -129,10 +130,18 @@ class KeyRing:
 
     def verify(self, signed_url: str) -> Verification:
         """Check that kid/sig are the last parameters and the signature matches a known key."""
-        match = SIGNED_URL.fullmatch(signed_url.strip())
-        if not match:
+        candidate = signed_url.strip()
+        base, tail = candidate[:-TAIL_LENGTH], candidate[-TAIL_LENGTH:]
+        match = SIGNATURE_TAIL.fullmatch(tail)
+        if (
+            not match
+            or len(candidate) > MAX_URL_LENGTH
+            or not base.startswith("https://")
+            or len(base) <= len("https://")
+            or any(c.isspace() or c == "#" for c in base)
+        ):
             return Verification(False, "not a signed URL (kid and sig must be the last parameters)")
-        base, kid = match["base"], match["kid"]
+        kid = match["kid"]
         public = self.public_keys.get(kid)
         if public is None:
             return Verification(False, "unknown key id", kid=kid, url=base)

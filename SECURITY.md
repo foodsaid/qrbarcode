@@ -36,8 +36,8 @@ We will respond within 48 hours and provide updates every 5 business days.
 
 ## Signing Keys
 
-- The Ed25519 private key is created by `scripts/gen_signing_key.py` with mode 0600, never overwritten, and mounted read-only as a Docker secret. `secrets/` and `*.pem` are ignored by git and excluded from the Docker build context; push protection blocks private keys.
-- `POST /sign` requires a Bearer API key; only SHA-256 hashes are stored and compared in constant time. CORS does not allow `Authorization` or `POST`, so browsers on other sites cannot sign.
+- The Ed25519 private key and the API key are created by `scripts/gen_signing_key.py` as files with mode 0600, never overwritten (the API key is never printed), and mounted read-only as a Docker secret. `secrets/` and `*.pem` are ignored by git and excluded from the Docker build context; push protection blocks private keys.
+- `POST /sign` requires a Bearer API key; only SHA-256 hashes are stored and compared in constant time. The key is a 256-bit random token, so a fast hash is appropriate (slow password hashes are for human-chosen passwords). CORS does not allow `Authorization` or `POST`, so browsers on other sites cannot sign.
 - A misconfigured key (missing file, wrong type) stops the service at startup instead of signing with something unexpected.
 - Signatures cover a version tag, the key id and the exact URL text, and `kid`/`sig` must be the last parameters, so verification never depends on URL normalisation.
 - If a key leaks: create a new key, stop listing the leaked public key, redeploy. Codes signed with the leaked key then fail verification.

@@ -251,7 +251,7 @@ It does **not** stop someone from photocopying a genuine code (that needs per-it
 
    ```bash
    python scripts/gen_signing_key.py secrets/signing_key.pem
-   # prints the key id, an API key (shown once) and SIGNING_API_KEY_HASHES=...
+   # writes secrets/signing_key.apikey (0600; never printed) and prints the key id and SIGNING_API_KEY_HASHES=...
    ```
 
 2. Put `SIGNING_API_KEY_HASHES=...` in `.env` and redeploy. `scripts/deploy_local.sh` adds

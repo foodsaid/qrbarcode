@@ -2,9 +2,11 @@
 
     python scripts/gen_signing_key.py secrets/signing_key.pem
 
-Writes the private key (mode 0600, never overwrites) and its public key next to it,
-then prints the key id, a new API key (shown once) and the SHA-256 to put in
-SIGNING_API_KEY_HASHES. Keep the private key and the API key out of git.
+Writes the private key and a new API key (both mode 0600, never overwritten) and the
+public key next to it, then prints the key id and the SHA-256 of the API key to put in
+SIGNING_API_KEY_HASHES. The API key is not printed, so it never lands in terminal
+scrollback or CI logs; hand the .apikey file's content to the systems that sign, then
+delete the file. Keep all of these out of git.
 """
 
 import hashlib
@@ -27,8 +29,9 @@ def main() -> int:
         return 2
     private_path = Path(sys.argv[1])
     public_path = private_path.with_suffix(".pub.pem")
-    if private_path.exists() or public_path.exists():
-        print(f"Refusing to overwrite {private_path} / {public_path}", file=sys.stderr)
+    api_key_path = private_path.with_suffix(".apikey")
+    if private_path.exists() or public_path.exists() or api_key_path.exists():
+        print(f"Refusing to overwrite files next to {private_path}", file=sys.stderr)
         return 1
     private_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -45,11 +48,15 @@ def main() -> int:
         )
     )
 
+    # A 256-bit random token, not a human password: a fast hash is the right choice
     api_key = secrets.token_urlsafe(32)
+    fd = os.open(api_key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w") as handle:
+        handle.write(api_key + "\n")
     print(f"Private key : {private_path} (mode 0600)")
     print(f"Public key  : {public_path}")
+    print(f"API key     : {api_key_path} (mode 0600) <- give it to the systems that sign")
     print(f"Key id (kid): {key_id(key.public_key())}")
-    print(f"API key     : {api_key}   <- shown once; give it to the systems that sign")
     print(f"SIGNING_API_KEY_HASHES={hashlib.sha256(api_key.encode()).hexdigest()}")
     return 0
 
