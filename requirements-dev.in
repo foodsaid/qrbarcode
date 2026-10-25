@@ -1,6 +1,8 @@
 # Development dependencies. Edit this file, then run `make lock`.
 -c requirements.txt
 -r requirements.in
+# The MCP server is tested in CI too
+mcp==2.3.0
 
 # Testing
 pytest==9.1.1

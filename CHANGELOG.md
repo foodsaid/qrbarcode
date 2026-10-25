@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `gs1.py` (pure, no dependencies) with Digital Link parsing, and shared GS1 test vectors in `tests/gs1_vectors.json`
 - Signed anti-counterfeit codes (Ed25519): `POST /sign` (Bearer API key, hashed) for URLs or GS1 fields, `GET /verify`, `GET /.well-known/qr-signing-keys.json` (JWKS); key rotation via `SIGNING_PUBLIC_KEY_FILES`; `scripts/gen_signing_key.py`; `docker-compose.signing.yml` mounts the key as a Docker secret
 - Request bodies are limited to 64 KB (was 16 MB)
+- MCP server `qr_mcp.py` (stdio, official `mcp` SDK 2.3.0 `MCPServer`): read-only tools `generate_code`, `generate_gs1_code`, `build_gs1_digital_link`, `verify_signed_code`; PNG as image content, SVG as text, structured results, validation errors returned to the model; own lock `requirements-mcp.txt`, audited in CI, not in the Docker image
+- `KeyRing.from_jwks()` to verify with a published JWKS (`QR_SIGNING_JWKS` path or https URL)
+
+### Fixed (since phase 1)
+- EAN-13 validation errors were wrapped twice ("Cannot encode content: …")
 
 ### Fixed
 - QR content beyond capacity returned 500 (qrcode 8 raises `ValueError`, not `DataOverflowError`); now a 400 with a clear message

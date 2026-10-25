@@ -46,6 +46,7 @@ jobs:
     - name: Audit locked dependencies
       run: |
         pip-audit --strict --require-hashes --disable-pip -r requirements.txt
+        pip-audit --strict --require-hashes --disable-pip -r requirements-mcp.txt
         pip-audit --strict --require-hashes --disable-pip -r requirements-dev.txt
 
     - name: Lint with flake8
@@ -74,7 +75,7 @@ jobs:
 
     - name: Run tests with pytest
       run: |
-        pytest --cov=main --cov=codes --cov=gs1 --cov=signing --cov-report=term
+        pytest --cov=main --cov=codes --cov=gs1 --cov=signing --cov=qr_mcp --cov-report=term
 
   docker:
     name: Docker Build
