@@ -54,7 +54,19 @@ BARCODE_MARGIN_TOP = 3.0
 
 
 class CodeError(ValueError):
-    """Invalid input or options; the message is safe to show to the client."""
+    """
+    Invalid input or options.
+
+    `public_message` is the only text ever returned to clients (HTTP, MCP). It is set from
+    this project's own wording at the raise site; never put exception text, file paths or
+    other internals in it. Callers must use `public_message`, not `str(error)`, so any extra
+    detail an exception might carry can only reach the server log.
+    """
+
+    def __init__(self, public_message: str):
+        """Store the client-facing message (also used as the exception text for logs)."""
+        super().__init__(public_message)
+        self.public_message = public_message
 
 
 @dataclass(frozen=True)

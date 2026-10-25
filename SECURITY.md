@@ -25,7 +25,7 @@ We will respond within 48 hours and provide updates every 5 business days.
 
 ## Security Features
 
-- **Input validation**: content length and type are checked; barcodes accept ASCII only. Generation errors return a generic message without exception details.
+- **Input validation**: content length and type are checked; barcodes accept ASCII only. Validation errors return only `CodeError.public_message`, which is written by this project at the raise site; `str(error)` is never sent to clients, so exception internals can only reach the server log. Unexpected errors return a generic message.
 - **Rate limiting**: 100 requests/minute per client IP globally, 50/minute on `/generate`. Behind a reverse proxy set `PROXY_COUNT` so the real client IP is counted.
 - **Security headers on every response**: `Content-Security-Policy` (`default-src 'none'` for the API; same-origin scripts only for `/docs`, no inline script), `X-Frame-Options: DENY` / `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`.
 - **Log privacy**: logs record type, length and status, never the encoded content or query string.

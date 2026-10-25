@@ -245,7 +245,7 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
         data, mimetype = render_type(generate_type, content, options)
     except codes.CodeError as e:
         logger.warning(f"Invalid input for {generate_type}: {e}")
-        return str(e), 400
+        return e.public_message, 400
     except Exception as e:
         logger.error(f"{generate_type} generation failed: {type(e).__name__}", exc_info=True)
         return f"{'QR code' if generate_type == 'qrcode' else 'Barcode'} generation error", 500
@@ -264,7 +264,7 @@ def gs1_digital_link() -> Union[Response, Tuple[Response, int]]:
         item = gs1.build(request.args)
         uri = item.digital_link(request.args.get("domain") or gs1.DEFAULT_RESOLVER)
     except codes.CodeError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": e.public_message}), 400
     return jsonify(
         {
             "uri": uri,
@@ -303,7 +303,7 @@ def sign() -> Union[Response, Tuple[Response, int]]:
             url = gs1.build(fields).digital_link(fields.get("domain") or gs1.DEFAULT_RESOLVER)
         signed = keyring.sign(url)
     except codes.CodeError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": e.public_message}), 400
     logger.info("Signed a URL")
     return jsonify({"url": signed, "kid": keyring.signing_kid})
 
