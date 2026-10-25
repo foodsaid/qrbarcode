@@ -7,6 +7,7 @@ STABLE_TAG="${STABLE_TAG:-stable}"
 CONTAINER_NAME="${CONTAINER_NAME:-qr-service}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 NETWORK_NAME="${NETWORK_NAME:-qrnetwork}"
+SIGNING_KEY_PATH="${SIGNING_KEY_PATH:-secrets/signing_key.pem}"
 
 usage() {
     cat <<'EOF'
@@ -41,7 +42,13 @@ ensure_network() {
 
 compose_up_with_tag() {
     local tag="$1"
-    IMAGE_REPO="${IMAGE_REPO}" IMAGE_TAG="${tag}" docker compose -f "${COMPOSE_FILE}" up -d --no-build --force-recreate
+    local files=(-f "${COMPOSE_FILE}")
+    # Signed codes: enabled when a signing key exists (see docker-compose.signing.yml)
+    if [ -f "${SIGNING_KEY_PATH}" ]; then
+        files+=(-f docker-compose.signing.yml)
+        echo "Signing key found: enabling /sign"
+    fi
+    IMAGE_REPO="${IMAGE_REPO}" IMAGE_TAG="${tag}" docker compose "${files[@]}" up -d --no-build --force-recreate
 }
 
 deploy() {

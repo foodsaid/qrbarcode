@@ -6,6 +6,7 @@ import pytest
 from flask import Response
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+import codes
 from main import (
     API_CSP,
     DOCS_CSP,
@@ -129,6 +130,24 @@ class TestSecurityHeaders:
         assert csp == DOCS_CSP
         assert "script-src 'self';" in csp
         assert "unsafe-eval" not in csp
+
+    def test_client_gets_only_public_message(self, client, monkeypatch):
+        """Test that a CodeError's own text (which could carry internals) never reaches clients."""
+
+        class LeakyError(codes.CodeError):
+            def __str__(self):
+                return "internal detail /home/appuser/secret"
+
+        def fail(*_args, **_kwargs):
+            raise LeakyError("Readable message for the client")
+
+        monkeypatch.setattr("codes.render", fail)
+        response = client.get("/generate?content=x")
+        assert response.status_code == 400
+        assert response.data == b"Readable message for the client"
+        monkeypatch.setattr("gs1.build", fail)
+        response = client.get("/gs1/digital-link?gtin=1")
+        assert response.get_json() == {"error": "Readable message for the client"}
 
     def test_generation_error_hides_exception_text(self, client, monkeypatch):
         """Test that a failing generator returns a generic message, not exception details."""

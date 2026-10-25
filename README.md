@@ -241,6 +241,39 @@ curl "http://localhost:8505/generate?type=gs1qr&gtin=9506000134352&domain=https:
 
 `tests/gs1_vectors.json` holds shared test vectors that other implementations (e.g. QRprint) can reuse.
 
+### Signed Anti-Counterfeit Codes / 签名防伪二维码
+
+A signature proves the code was issued by you: nobody can invent a new batch or change a date.
+It does **not** stop someone from photocopying a genuine code (that needs per-item serials and scan tracking).
+签名可以防止伪造新码（编造批号、篡改有效期），但不能防止原样复印真码。
+
+1. Create a key once (the private key stays on the server, mode 0600, ignored by git and Docker):
+
+   ```bash
+   python scripts/gen_signing_key.py secrets/signing_key.pem
+   # writes secrets/signing_key.apikey (0600; never printed) and prints the key id and SIGNING_API_KEY_HASHES=...
+   ```
+
+2. Put `SIGNING_API_KEY_HASHES=...` in `.env` and redeploy. `scripts/deploy_local.sh` adds
+   `docker-compose.signing.yml` automatically when `secrets/signing_key.pem` exists; the key is mounted
+   read-only as a Docker secret.
+
+3. Sign, render, verify:
+
+   ```bash
+   curl -X POST http://localhost:8505/sign -H "Authorization: Bearer $API_KEY" \
+        -H "Content-Type: application/json" \
+        -d '{"gtin":"9506000134352","batch":"ABC123","expiry":"2027-12-31"}'
+   # {"kid":"...","url":"https://id.gs1.org/01/09506000134352/10/ABC123?17=271231&kid=...&sig=..."}
+
+   curl -G http://localhost:8505/generate --data-urlencode "content=$SIGNED_URL" -d ec=M > signed.png
+   curl -G http://localhost:8505/verify --data-urlencode "u=$SCANNED_URL"
+   # {"valid":true,"reason":"ok","gs1":{"01":"09506000134352","10":"ABC123","17":"271231"},...}
+   ```
+
+Public keys for offline verification are at `/.well-known/qr-signing-keys.json` (JWKS, Ed25519).
+To rotate, create a new key, list the old public key in `SIGNING_PUBLIC_KEY_FILES`, and old codes keep verifying.
+
 ## API Reference / API 参考
 
 ### `GET /generate`
@@ -480,6 +513,10 @@ Environment variables:
 | `RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable rate limiting (e.g. trusted internal network) |
 | `RATE_LIMIT` | `100 per minute` | Global limit per client IP |
 | `GENERATE_RATE_LIMIT` | `50 per minute` | Limit per client IP on `/generate` |
+| `SIGNING_KEY_FILE` | *(empty)* | Ed25519 private key (PEM) for `POST /sign`, normally `/run/secrets/qr_signing_key` |
+| `SIGNING_PUBLIC_KEY_FILES` | *(empty)* | Comma-separated PEM public keys of retired keys, still accepted by `/verify` |
+| `SIGNING_API_KEY_HASHES` | *(empty)* | Comma-separated SHA-256 hex of API keys allowed to sign |
+| `SIGN_RATE_LIMIT` | `30 per minute` | Limit per client IP on `/sign` |
 | `PROXY_COUNT` | `0` | Number of reverse proxies in front of the app (`1` for a Cloudflare Tunnel or a single nginx). Trusts their `X-Forwarded-For` / `X-Forwarded-Proto`, so rate limits count real client IPs. Only set it when the port is reachable through those proxies alone |
 | `SWAGGER_HOST` | *(empty)* | Public host for the OpenAPI `servers` list, e.g. `qr.example.com`. Empty = no servers list, so Swagger UI calls the same scheme and host the docs page was opened on |
 | `SWAGGER_SCHEMES` | `https,http` | Protocols listed for `SWAGGER_HOST` (first is the default); ignored when `SWAGGER_HOST` is empty |

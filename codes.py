@@ -54,7 +54,19 @@ BARCODE_MARGIN_TOP = 3.0
 
 
 class CodeError(ValueError):
-    """Invalid input or options; the message is safe to show to the client."""
+    """
+    Invalid input or options.
+
+    `public_message` is the only text ever returned to clients (HTTP, MCP). It is set from
+    this project's own wording at the raise site; never put exception text, file paths or
+    other internals in it. Callers must use `public_message`, not `str(error)`, so any extra
+    detail an exception might carry can only reach the server log.
+    """
+
+    def __init__(self, public_message: str):
+        """Store the client-facing message (also used as the exception text for logs)."""
+        super().__init__(public_message)
+        self.public_message = public_message
 
 
 @dataclass(frozen=True)
@@ -166,8 +178,9 @@ def _zxing_matrix(content: str, fmt, **kwargs) -> Image.Image:
     """Create a symbol with zxing-cpp and return it at one pixel per module, no quiet zone."""
     try:
         symbol = zxingcpp.create_barcode(content, fmt, **kwargs)
-    except ValueError as e:
-        raise CodeError(f"Cannot encode content: {e}") from None
+    except ValueError:
+        # zxing-cpp's own message is library internals; keep client errors to our wording
+        raise CodeError("Cannot encode this content in the requested symbol") from None
     raw = symbol.to_image(scale=1, add_quiet_zones=False)
     height, width = raw.shape
     return Image.frombytes("L", (width, height), bytes(memoryview(raw)))
@@ -247,10 +260,11 @@ def normalize_ean13(content: str) -> str:
 def _render_ean13(content: str, opts: RenderOptions) -> bytes:
     if opts.border is not None:
         raise CodeError("'border' is fixed by the EAN-13 specification")
+    digits = normalize_ean13(content)
     try:
-        symbol = zxingcpp.create_barcode(normalize_ean13(content), zxingcpp.BarcodeFormat.EAN13)
-    except ValueError as e:
-        raise CodeError(f"Cannot encode content: {e}") from None
+        symbol = zxingcpp.create_barcode(digits, zxingcpp.BarcodeFormat.EAN13)
+    except ValueError:
+        raise CodeError("Cannot encode this content as EAN-13") from None
     if opts.size is not None:
         # EAN-13 is 113 modules wide including its specified quiet zones
         scale = _fit_scale(opts.size, 113)

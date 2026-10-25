@@ -20,6 +20,7 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 
 import codes
 import gs1
+import signing
 
 # Built from GS1 fields (gtin, batch, serial, dates) instead of `content`
 GS1_TYPES = {"gs1qr", "gs1datamatrix"}
@@ -43,6 +44,11 @@ class Config:
     # X-Forwarded-For / X-Forwarded-Proto are trusted so rate limits count real client IPs.
     # Only set this when the port is reachable through those proxies alone.
     PROXY_COUNT: int = 0
+    # Signed codes: PEM private key (Docker secret), retired public keys, API key hashes
+    SIGNING_KEY_FILE: str = ""
+    SIGNING_PUBLIC_KEY_FILES: str = ""
+    SIGNING_API_KEY_HASHES: str = ""
+    SIGN_RATE_LIMIT: str = "30 per minute"
     # API docs servers. Empty host = no servers list, so Swagger UI calls the docs page's own
     # scheme and host. Schemes only apply when SWAGGER_HOST is set; the first is the default.
     SWAGGER_HOST: str = ""
@@ -56,6 +62,14 @@ class Config:
         self.RATE_LIMIT_ENABLED = os.environ.get("RATE_LIMIT_ENABLED", "true").lower() == "true"
         self.RATE_LIMIT = os.environ.get("RATE_LIMIT", self.RATE_LIMIT)
         self.GENERATE_RATE_LIMIT = os.environ.get("GENERATE_RATE_LIMIT", self.GENERATE_RATE_LIMIT)
+        self.SIGNING_KEY_FILE = os.environ.get("SIGNING_KEY_FILE", self.SIGNING_KEY_FILE)
+        self.SIGNING_PUBLIC_KEY_FILES = os.environ.get(
+            "SIGNING_PUBLIC_KEY_FILES", self.SIGNING_PUBLIC_KEY_FILES
+        )
+        self.SIGNING_API_KEY_HASHES = os.environ.get(
+            "SIGNING_API_KEY_HASHES", self.SIGNING_API_KEY_HASHES
+        )
+        self.SIGN_RATE_LIMIT = os.environ.get("SIGN_RATE_LIMIT", self.SIGN_RATE_LIMIT)
         self.SWAGGER_HOST = os.environ.get("SWAGGER_HOST", self.SWAGGER_HOST)
         schemes_env = os.environ.get("SWAGGER_SCHEMES")
         if schemes_env:
@@ -67,7 +81,7 @@ config = Config()
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max request size
+app.config["MAX_CONTENT_LENGTH"] = 64 * 1024  # only POST /sign has a (small) JSON body
 app.config["RATELIMIT_ENABLED"] = config.RATE_LIMIT_ENABLED
 if config.PROXY_COUNT > 0:
     app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
@@ -81,6 +95,9 @@ limiter = Limiter(
     default_limits=[config.RATE_LIMIT],
     storage_uri="memory://",
 )
+
+# Fails at startup if a configured key file is missing or not Ed25519
+keyring = signing.KeyRing.from_files(config.SIGNING_KEY_FILE, config.SIGNING_PUBLIC_KEY_FILES)
 
 # OpenAPI spec, hand-maintained in openapi.json; /docs renders it with the vendored Swagger UI
 OPENAPI_SPEC: Dict[str, Any] = json.loads(
@@ -228,7 +245,7 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
         data, mimetype = render_type(generate_type, content, options)
     except codes.CodeError as e:
         logger.warning(f"Invalid input for {generate_type}: {e}")
-        return str(e), 400
+        return e.public_message, 400
     except Exception as e:
         logger.error(f"{generate_type} generation failed: {type(e).__name__}", exc_info=True)
         return f"{'QR code' if generate_type == 'qrcode' else 'Barcode'} generation error", 500
@@ -247,7 +264,7 @@ def gs1_digital_link() -> Union[Response, Tuple[Response, int]]:
         item = gs1.build(request.args)
         uri = item.digital_link(request.args.get("domain") or gs1.DEFAULT_RESOLVER)
     except codes.CodeError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": e.public_message}), 400
     return jsonify(
         {
             "uri": uri,
@@ -255,6 +272,73 @@ def gs1_digital_link() -> Union[Response, Tuple[Response, int]]:
             "ais": item.ais(),
         }
     )
+
+
+def sign_authorized() -> bool:
+    """Bearer API key from the Authorization header, checked against the configured hashes."""
+    scheme, _, token = request.headers.get("Authorization", "").partition(" ")
+    hashes = [h for h in config.SIGNING_API_KEY_HASHES.split(",") if h.strip()]
+    return scheme.lower() == "bearer" and bool(token) and signing.api_key_matches(token, hashes)
+
+
+@app.route("/sign", methods=["POST"])
+@limiter.limit(lambda: config.SIGN_RATE_LIMIT)
+def sign() -> Union[Response, Tuple[Response, int]]:
+    """Sign an https URL or GS1 fields (as a Digital Link); requires a Bearer API key."""
+    if not sign_authorized():
+        logger.warning("Rejected /sign request: missing or invalid API key")
+        response = jsonify({"error": "Missing or invalid API key"})
+        response.headers["WWW-Authenticate"] = "Bearer"
+        return response, 401
+    if not keyring.can_sign:
+        return jsonify({"error": "Signing is not configured on this server"}), 503
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({"error": "Body must be a JSON object"}), 400
+    fields = {k: str(v) for k, v in body.items() if isinstance(v, (str, int))}
+    try:
+        if "url" in fields:
+            url = fields["url"]
+        else:
+            url = gs1.build(fields).digital_link(fields.get("domain") or gs1.DEFAULT_RESOLVER)
+        signed = keyring.sign(url)
+    except codes.CodeError as e:
+        return jsonify({"error": e.public_message}), 400
+    logger.info("Signed a URL")
+    return jsonify({"url": signed, "kid": keyring.signing_kid})
+
+
+@app.route("/verify")
+@limiter.limit(lambda: config.GENERATE_RATE_LIMIT)
+def verify() -> Union[Response, Tuple[Response, int]]:
+    """Verify a scanned signed URL (`u`); also decodes its GS1 data when it is a Digital Link."""
+    scanned = request.args.get("u", "")
+    if not scanned:
+        return jsonify({"error": "Missing 'u' parameter"}), 400
+    result = keyring.verify(scanned)
+    gs1_data = None
+    if result.valid and result.url:
+        try:
+            gs1_data = gs1.parse_digital_link(result.url).ais()
+        except codes.CodeError:
+            pass  # a valid signature on a non-GS1 URL
+    return jsonify(
+        {
+            "valid": result.valid,
+            "reason": result.reason,
+            "kid": result.kid,
+            "url": result.url,
+            "gs1": gs1_data,
+        }
+    )
+
+
+@app.route("/.well-known/qr-signing-keys.json")
+def signing_keys() -> Response:
+    """Public keys for offline verification (JWKS, Ed25519)."""
+    response = jsonify(keyring.jwks())
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 @app.route("/apispec.json")
