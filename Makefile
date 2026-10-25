@@ -8,7 +8,8 @@ LOCK_COOLDOWN ?= 14 days
 # Packages whose only non-vulnerable release is newer than the cooldown.
 # Remove an entry once that release is older than LOCK_COOLDOWN.
 LOCK_SECURITY_EXCEPTIONS ?= pillow virtualenv filelock certifi
-UV_LOCK = uv pip compile --quiet --universal --python-version 3.12 --generate-hashes \
+# Locks target Linux (CI, Docker, and Dependabot all resolve for Linux), oldest supported Python.
+UV_LOCK = uv pip compile --quiet --python-platform linux --python-version 3.12 --generate-hashes \
 	--exclude-newer "$(LOCK_COOLDOWN)" \
 	$(foreach p,$(LOCK_SECURITY_EXCEPTIONS),--exclude-newer-package "$(p)=false") \
 	--custom-compile-command "make lock"
