@@ -284,7 +284,7 @@ We welcome feature requests! Please provide:
 ## Documentation
 
 - Update README.md for user-facing changes
-- Update docstrings for API changes
+- Update `openapi.json` for API changes (tests fail if a route is missing from it)
 - Add examples for new features
 - Update CHANGELOG.md
 

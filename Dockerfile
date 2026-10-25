@@ -25,8 +25,8 @@ WORKDIR /app
 # Copy dependencies from builder
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
-# Copy application code and gunicorn config
-COPY --chown=appuser:appuser main.py gunicorn.conf.py ./
+# Copy application code, gunicorn config and OpenAPI spec
+COPY --chown=appuser:appuser main.py gunicorn.conf.py openapi.json ./
 COPY --chown=appuser:appuser static ./static
 
 # Set PATH for user-installed packages

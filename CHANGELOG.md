@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-10-25
+
+### Changed
+- API docs are now an OpenAPI 3.0 spec maintained in `openapi.json` (was Swagger 2.0 generated from docstrings); `/docs` and `/apispec.json` keep their URLs
+- `SWAGGER_HOST` / `SWAGGER_SCHEMES` now fill the OpenAPI `servers` list
+
+### Removed
+- `flasgger` (unmaintained since 2023) and the dependencies only it needed: mistune, jsonschema, referencing, rpds-py, PyYAML, six, attrs (runtime lock 29 → 20 packages)
+- Vendored jQuery and the unused Swagger UI standalone preset
+
+### Added
+- Tests that the spec documents exactly the routes the app serves, and that documented limits match the runtime config
+
+---
+
 ## [0.1.1] - 2026-10-25
 
 ### Changed
@@ -119,5 +134,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.1.2]: https://github.com/foodsaid/qrbarcode/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/foodsaid/qrbarcode/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/foodsaid/qrbarcode/releases/tag/v0.1.0

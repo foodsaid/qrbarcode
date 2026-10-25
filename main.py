@@ -5,20 +5,21 @@ A Flask-based microservice for generating QR codes and barcodes.
 """
 
 import io
+import json
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Tuple, Union
+from pathlib import Path
+from typing import Any, Dict, Tuple, Union
 
 import barcode
 import qrcode
 from barcode.writer import ImageWriter
-from flasgger import Swagger
 from flask import Flask, Response, jsonify, request, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 @dataclass
@@ -42,7 +43,7 @@ class Config:
     BARCODE_FONT_SIZE: int = 12  # Font size for text below barcode
     BARCODE_TEXT_DISTANCE: float = 6.0  # Distance between barcode and text in mm
     BARCODE_MARGIN_TOP: float = 3.0  # Top margin in mm
-    # Swagger configuration (empty host = use the host the docs page was served from)
+    # API docs servers (empty host = use the host the docs page was served from)
     SWAGGER_HOST: str = ""
     SWAGGER_SCHEMES: list = field(default_factory=lambda: ["http", "https"])
 
@@ -75,50 +76,11 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-# Swagger configuration
-swagger_config = {
-    "headers": [],
-    "specs": [
-        {
-            "endpoint": "apispec",
-            "route": "/apispec.json",
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True,
-        }
-    ],
-    "static_url_path": "/flasgger_static",
-    "swagger_ui": True,
-    "specs_route": "/docs",
-    # flasgger 0.9.7.1 bundles swagger-ui 3.28.0 / jQuery 2.2.4 (known XSS/spoofing CVEs);
-    # serve patched local copies from static/vendor instead.
-    "swagger_ui_bundle_js": "/static/vendor/swagger-ui-5.33.1/swagger-ui-bundle.js",
-    "swagger_ui_standalone_preset_js": "/static/vendor/swagger-ui-5.33.1/swagger-ui-standalone-preset.js",
-    "swagger_ui_css": "/static/vendor/swagger-ui-5.33.1/swagger-ui.css",
-    "jquery_js": "/static/vendor/jquery-3.7.1/jquery.min.js",
-    # Without this flasgger renders `let auth_config = None;` and the docs page throws.
-    "auth": {},
-}
-
-swagger_template = {
-    "swagger": "2.0",
-    "info": {
-        "title": "QR/Barcode Generation API",
-        "description": "A lightweight microservice for generating QR codes and barcodes",
-        "contact": {"name": "foodsaid", "url": "https://github.com/foodsaid/qrbarcode"},
-        "version": __version__,
-    },
-    "basePath": "/",
-    "schemes": config.SWAGGER_SCHEMES,
-    "tags": [
-        {"name": "generate", "description": "Code generation endpoints"},
-        {"name": "health", "description": "Health check endpoints"},
-    ],
-}
-
-if config.SWAGGER_HOST:
-    swagger_template["host"] = config.SWAGGER_HOST
-
-swagger = Swagger(app, config=swagger_config, template=swagger_template)
+# OpenAPI spec, hand-maintained in openapi.json; /docs renders it with the vendored Swagger UI
+OPENAPI_SPEC: Dict[str, Any] = json.loads(
+    (Path(__file__).parent / "openapi.json").read_text(encoding="utf-8")
+)
+OPENAPI_SPEC["info"]["version"] = __version__
 
 # Configure logging
 logging.basicConfig(
@@ -188,51 +150,14 @@ def add_security_headers(response: Response) -> Response:
 @app.route("/health")
 @limiter.exempt
 def health_check() -> Tuple[str, int]:
-    """
-    Health check endpoint for monitoring and container orchestration.
-    ---
-    tags:
-      - health
-    responses:
-      200:
-        description: Service is healthy
-        schema:
-          type: string
-          example: OK
-    """
+    """Health check endpoint for monitoring and container orchestration."""
     return "OK", 200
 
 
 @app.route("/metrics")
 @limiter.exempt
 def metrics() -> Response:
-    """
-    Basic metrics endpoint for monitoring.
-    ---
-    tags:
-      - health
-    responses:
-      200:
-        description: Service metrics
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: healthy
-            version:
-              type: string
-              example: 0.1.1
-            config:
-              type: object
-              properties:
-                max_content_length:
-                  type: integer
-                  example: 1000
-                rate_limit:
-                  type: string
-                  example: "100 per minute"
-    """
+    """Report service status, version and effective limits."""
     return jsonify(
         {
             "status": "healthy",
@@ -250,51 +175,9 @@ def metrics() -> Response:
 @limiter.limit(lambda: config.GENERATE_RATE_LIMIT)
 def generate_code() -> Union[Response, Tuple[str, int]]:
     """
-    Generate QR code or barcode based on user input.
-    ---
-    tags:
-      - generate
-    parameters:
-      - name: content
-        in: query
-        type: string
-        required: true
-        description: |
-          Text content to encode.
-          - QR code: max 1000 chars, supports any text
-          - Barcode: max 64 chars, ASCII characters only (supports special chars like -,.,@,#,etc)
-        example: "Hello World"
-      - name: type
-        in: query
-        type: string
-        required: false
-        description: Type of code to generate
-        enum: [qrcode, barcode]
-        default: qrcode
-        example: qrcode
-    responses:
-      200:
-        description: Successfully generated image
-        content:
-          image/png:
-            schema:
-              type: string
-              format: binary
-      400:
-        description: Invalid input parameters
-        schema:
-          type: string
-          example: "Missing 'content' parameter"
-      429:
-        description: Rate limit exceeded
-        schema:
-          type: string
-          example: "Rate limit exceeded"
-      500:
-        description: Internal server error
-        schema:
-          type: string
-          example: "Internal server error"
+    Generate a QR code or barcode PNG from the `content` and `type` query parameters.
+
+    See openapi.json for the full parameter and response contract.
     """
     try:
         # Get and validate parameters
@@ -359,6 +242,21 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
     except Exception as e:
         logger.error(f"Unexpected error in generate_code: {str(e)}", exc_info=True)
         return "Internal server error", 500
+
+
+@app.route("/apispec.json")
+def apispec() -> Response:
+    """Serve the OpenAPI spec with servers for the configured host and schemes."""
+    host = config.SWAGGER_HOST or request.host
+    spec = dict(OPENAPI_SPEC, servers=[{"url": f"{s}://{host}"} for s in config.SWAGGER_SCHEMES])
+    return jsonify(spec)
+
+
+@app.route("/docs")
+@app.route("/docs/")
+def docs() -> Response:
+    """Serve the Swagger UI page."""
+    return app.send_static_file("docs/index.html")
 
 
 @app.after_request
