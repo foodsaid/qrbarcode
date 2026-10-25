@@ -30,7 +30,7 @@ What actually happened.
 ## Request Details
 ```bash
 # Example curl command that reproduces the issue
-curl "http://localhost:8080/generate?content=YourContent&type=qrcode"
+curl "http://localhost:8505/generate?content=YourContent&type=qrcode"
 ```
 
 ## Logs

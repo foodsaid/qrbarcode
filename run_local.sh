@@ -8,7 +8,7 @@ set -e  # Exit on error
 # Configuration
 SERVICE_NAME="qr-service-local"
 IMAGE_NAME="qr-service"
-PORT="${PORT:-8080}"
+PORT="${PORT:-8505}"
 
 echo "======================================="
 echo "QRBarcode Local Development Setup"

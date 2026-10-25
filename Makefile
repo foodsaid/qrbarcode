@@ -126,14 +126,14 @@ docker-prune-dangling: ## Remove only dangling images (safe cleanup)
 
 docs: ## Open API documentation in browser
 	@echo "Starting service and opening documentation..."
-	@echo "API docs will be available at http://localhost:8080/docs"
-	python main.py
+	@echo "API docs will be available at http://localhost:8505/docs"
+	PORT=8505 python main.py
 
-run: ## Run the application locally
-	python main.py
+run: ## Run the application locally on port 8505
+	PORT=8505 python main.py
 
 run-dev: ## Run the application in development mode
-	DEBUG=true python main.py
+	DEBUG=true PORT=8505 python main.py
 
 pre-commit: ## Run pre-commit hooks on all files
 	pre-commit run --all-files

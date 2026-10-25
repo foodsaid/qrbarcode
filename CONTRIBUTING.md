@@ -90,7 +90,7 @@ name to `LOCK_SECURITY_EXCEPTIONS` in the `Makefile`; remove it again once the r
 python main.py
 
 # Method 2: With gunicorn
-gunicorn --bind 0.0.0.0:8080 main:app
+gunicorn --bind 0.0.0.0:8505 main:app
 
 # Method 3: Docker
 ./run_local.sh
