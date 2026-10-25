@@ -3,8 +3,9 @@ Unit tests for the QR Code and Barcode generation service.
 """
 
 import pytest
-from main import __version__, app, config, limiter, validate_input, add_security_headers
 from flask import Response
+
+from main import __version__, add_security_headers, app, config, limiter, validate_input
 
 
 @pytest.fixture

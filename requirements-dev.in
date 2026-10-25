@@ -1,0 +1,27 @@
+# Development dependencies. Edit this file, then run `make lock`.
+-c requirements.txt
+-r requirements.in
+
+# Testing
+pytest==9.1.1
+pytest-cov==7.1.0
+pytest-flask==1.3.0
+
+# Code quality
+flake8==7.4.1
+black==26.10.1
+isort==9.0.2
+pylint==4.1.2
+mypy==2.4.0
+
+# Pre-commit hooks
+pre-commit==4.6.2
+
+# Security scanning
+bandit==1.9.4
+pip-audit==2.10.1
+
+# Security floors for transitive dev dependencies (OSV, 2026-10-25)
+virtualenv>=21.14.13
+filelock>=4.2.1
+certifi>=2026.10.19

@@ -24,8 +24,7 @@ Be respectful and inclusive. We welcome contributions from everyone.
 
 3. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
-   pip install -r requirements-dev.txt
+   pip install --require-hashes -r requirements-dev.txt
    ```
 
 4. **Install pre-commit hooks**
@@ -67,7 +66,21 @@ mypy main.py
 bandit -r main.py
 
 # Check dependency vulnerabilities
-safety check
+make audit
+```
+
+### Changing Dependencies
+
+`requirements.txt` and `requirements-dev.txt` are generated lock files with hashes. Do not edit them by hand:
+
+1. Change the pin in `requirements.in` (runtime) or `requirements-dev.in` (tooling)
+2. Run `make lock` (needs [uv](https://docs.astral.sh/uv/)); it only picks releases at least 14 days old
+3. Run `make audit` and `make test`
+
+If a vulnerability is only fixed in a release newer than 14 days, add a floor to the `.in` file and the package
+name to `LOCK_SECURITY_EXCEPTIONS` in the `Makefile`; remove it again once the release is older than the cooldown.
+
+```bash
 ```
 
 ### Running Locally

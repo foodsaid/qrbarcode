@@ -35,7 +35,8 @@ This project implements:
   - X-Content-Type-Options: nosniff
   - X-XSS-Protection
 - **CORS Configuration**: Controlled cross-origin access
-- **Docker Security**: Non-root user execution
+- **Docker Security**: Non-root user execution, base image pinned by digest
+- **Supply Chain**: Hash-pinned dependencies with a 14-day release cooldown, audited by pip-audit in CI
 - **Logging**: Comprehensive request and error logging
 - **No Hardcoded Secrets**: All sensitive data via environment variables
 

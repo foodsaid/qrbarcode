@@ -1,10 +1,11 @@
 # Pre-commit hooks configuration
 # See https://pre-commit.com for more information
+# Hook revisions are frozen to commit SHAs (tags can be moved); keep in step with requirements-dev.in.
 
 repos:
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -20,7 +21,7 @@ repos:
 
   # Python code formatting with black
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 258e7dbf348bc23cb70b8cdf693481c04634ebcc  # frozen: 26.10.1
     hooks:
       - id: black
         language_version: python3.13
@@ -28,15 +29,15 @@ repos:
 
   # Python linting with flake8
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7eccf20b526fe4f2230bf9afeeef2fc9f97faf8d  # frozen: 7.4.1
     hooks:
       - id: flake8
         args: ['--max-line-length=100', '--extend-ignore=E203,W503']
-        additional_dependencies: [flake8-docstrings]
+        additional_dependencies: [flake8-docstrings==1.7.0]
 
   # Python import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 9f905615631c545f5aea2516508109350d1d2f7d  # frozen: 9.0.2
     hooks:
       - id: isort
         name: isort
@@ -44,21 +45,21 @@ repos:
 
   # Security scanning with bandit
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.0
+    rev: 92ae8b82fb422a639f0ed8d99e96cea769594e08  # frozen: 1.9.4
     hooks:
       - id: bandit
         args: ['-r', 'main.py', '--skip', 'B101']
 
   # YAML formatting
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.14.0
+    rev: 4380fbb73a154b5f5624794c1c78d9719ccc860f  # frozen: v2.16.0
     hooks:
       - id: pretty-format-yaml
         args: [--autofix, --indent, '2']
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: 2eece55955ced00200be9729e9728cb7dacca505  # frozen: v2.15.1
     hooks:
       - id: hadolint-docker
         args: ['--ignore', 'DL3008', '--ignore', 'DL3013']

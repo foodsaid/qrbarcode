@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-10-25
+
+### Changed
+- Upgraded Flask-Limiter 3.8.0 → 4.1.1, qrcode 7.4.2 → 8.2, gunicorn 23.0.0 → 26.2.0, python-barcode 0.15.1 → 0.16.1 (generated images are pixel-identical)
+- Upgraded dev tools (pytest 9.1.1, pytest-cov 7.1.0, flake8 7.4.1, pylint 4.1.2, mypy 2.4.0, pre-commit 4.6.2, bandit 1.9.4)
+- Replaced `safety` with `pip-audit` (no account needed)
+- CI now also tests Python 3.14
+
+### Security
+- Hash-pinned lock files (`requirements*.txt`) generated from `requirements*.in` with a 14-day release cooldown; Docker and CI install with `--require-hashes`
+- Docker base image pinned by digest; removed the unpinned `pip` upgrade from the image build
+- Pre-commit hooks frozen to commit SHAs
+- Fixed vulnerable dev dependencies: virtualenv 21.14.13, filelock 4.2.4, certifi 2026.10.23
+- Dependabot version updates for pip, GitHub Actions and Docker with cooldown
+- CI runs `pip-audit` against both lock files
+
+---
+
 ## [0.1.0] - 2026-10-25
 
 ### Added
@@ -101,4 +119,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.1.1]: https://github.com/foodsaid/qrbarcode/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/foodsaid/qrbarcode/releases/tag/v0.1.0
