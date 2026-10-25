@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SWAGGER_HOST` / `SWAGGER_SCHEMES` now fill the OpenAPI `servers` list
 
 ### Removed
+- Python 3.11 support (CI now tests 3.12–3.14; Docker stays on 3.13). Lock files no longer need 3.11-only entries, which Dependabot dropped when it re-resolved them
+- Unused `[build-system]` table from `pyproject.toml` (the service is not packaged)
 - `flasgger` (unmaintained since 2023) and the dependencies only it needed: mistune, jsonschema, referencing, rpds-py, PyYAML, six, attrs (runtime lock 29 → 20 packages)
 - Vendored jQuery and the unused Swagger UI standalone preset
 

@@ -5,7 +5,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 一个基于 Python Flask 和 Docker 构建的轻量级微服务，用于生成二维码（打印优化）和条形码（Code128）。支持离线部署。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 
 ## Features / 功能
 
@@ -27,7 +27,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 - Docker Compose (optional / 可选)
 
 ### For Local Development / 本地开发
-- Python 3.11+ (3.13 recommended / 推荐 3.13)
+- Python 3.12+ (3.13 recommended, same as the Docker image / 推荐 3.13，与 Docker 镜像一致)
 - pip 23.0+
 
 ## Quick Start / 快速开始
