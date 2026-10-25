@@ -5,7 +5,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 一个基于 Python Flask 和 Docker 构建的轻量级微服务，用于生成二维码（打印优化）和条形码（Code128）。支持离线部署。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 
 ## Features / 功能
 
@@ -15,7 +15,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 - **Simple API**: Easy-to-use HTTP GET endpoints. / **简单API**: 使用 HTTP GET 请求即可调用。
 - **Production Ready**: Includes logging, error handling, input validation, and security headers. / **生产就绪**: 包含日志、错误处理、输入验证和安全响应头。
 - **Health Monitoring**: Built-in health check endpoint for container orchestration. / **健康监控**: 内置健康检查端点，支持容器编排。
-- **API Documentation**: Interactive Swagger UI at `/docs` endpoint. / **API文档**: 交互式Swagger UI文档位于 `/docs` 端点。
+- **API Documentation**: Interactive Swagger UI at `/docs`, OpenAPI 3.0 spec at `/apispec.json` (source: `openapi.json`). / **API文档**: 交互式Swagger UI文档位于 `/docs`，OpenAPI 3.0 规格位于 `/apispec.json`（源文件 `openapi.json`）。
 - **Rate Limiting**: Built-in rate limiting to prevent abuse (100 requests/minute globally, 50/minute per endpoint). / **速率限制**: 内置速率限制防止滥用（全局100请求/分钟，单端点50/分钟）。
 - **Metrics Endpoint**: Performance and config metrics at `/metrics`. / **指标端点**: 性能和配置指标位于 `/metrics`。
 - **Developer Tools**: Makefile for common tasks, pre-commit hooks, and comprehensive testing. / **开发工具**: Makefile简化常用命令，pre-commit钩子，完整测试套件。
@@ -27,7 +27,7 @@ A lightweight, Dockerized microservice for generating QR codes (optimized for pr
 - Docker Compose (optional / 可选)
 
 ### For Local Development / 本地开发
-- Python 3.11+ (3.13 recommended / 推荐 3.13)
+- Python 3.12+ (3.13 recommended, same as the Docker image / 推荐 3.13，与 Docker 镜像一致)
 - pip 23.0+
 
 ## Quick Start / 快速开始
@@ -137,7 +137,7 @@ curl http://localhost:8080/metrics
 ```json
 {
   "status": "healthy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "config": {
     "max_content_length": 1000,
     "rate_limit": "100 per minute",
@@ -423,7 +423,7 @@ Environment variables:
 | `RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable rate limiting (e.g. trusted internal network) |
 | `RATE_LIMIT` | `100 per minute` | Global limit per client IP |
 | `GENERATE_RATE_LIMIT` | `50 per minute` | Limit per client IP on `/generate` |
-| `SWAGGER_HOST` | *(empty)* | Host shown in Swagger docs, e.g. `qr.example.com`; empty uses the request host |
+| `SWAGGER_HOST` | *(empty)* | Host used for the OpenAPI `servers` list, e.g. `qr.example.com`; empty uses the request host |
 | `SWAGGER_SCHEMES` | `http,https` | Protocols offered in Swagger UI |
 
 Rate limits are stored in memory, so each gunicorn worker counts separately. Behind a reverse proxy, all requests share the proxy's IP unless the proxy is configured to pass the client address.

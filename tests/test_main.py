@@ -5,7 +5,15 @@ Unit tests for the QR Code and Barcode generation service.
 import pytest
 from flask import Response
 
-from main import __version__, add_security_headers, app, config, limiter, validate_input
+from main import (
+    OPENAPI_SPEC,
+    __version__,
+    add_security_headers,
+    app,
+    config,
+    limiter,
+    validate_input,
+)
 
 
 @pytest.fixture
@@ -218,28 +226,69 @@ class TestWhitespaceHandling:
         assert b"Missing" in response.data
 
 
-class TestSwaggerUIAssets:
-    """Tests that /docs uses the patched local Swagger UI assets."""
+class TestAPIDocs:
+    """Tests for /docs and the OpenAPI spec at /apispec.json."""
 
     def test_docs_uses_vendored_assets(self, client):
-        """Test that /docs loads patched swagger-ui/jQuery, not flasgger's bundled copies."""
+        """Test that /docs loads the vendored Swagger UI and no jQuery or flasgger assets."""
         response = client.get("/docs")
         assert response.status_code == 200
         assert b"/static/vendor/swagger-ui-5.33.1/swagger-ui-bundle.js" in response.data
-        assert b"/static/vendor/jquery-3.7.1/jquery.min.js" in response.data
-        assert b"/flasgger_static/swagger-ui-bundle.js" not in response.data
+        assert b"/static/docs/init.js" in response.data
+        assert b"jquery" not in response.data.lower()
+        assert b"flasgger" not in response.data
+        response.close()
 
     def test_vendored_assets_served(self, client):
-        """Test that the vendored asset files are served."""
+        """Test that the docs page assets are served."""
         for path in (
             "/static/vendor/swagger-ui-5.33.1/swagger-ui-bundle.js",
-            "/static/vendor/swagger-ui-5.33.1/swagger-ui-standalone-preset.js",
             "/static/vendor/swagger-ui-5.33.1/swagger-ui.css",
-            "/static/vendor/jquery-3.7.1/jquery.min.js",
+            "/static/docs/init.js",
         ):
             response = client.get(path)
             assert response.status_code == 200, path
             response.close()
+
+    def test_spec_is_openapi3_with_version(self, client):
+        """Test that /apispec.json is OpenAPI 3 and reports the service version."""
+        spec = client.get("/apispec.json").get_json()
+        assert spec["openapi"].startswith("3.")
+        assert spec["info"]["version"] == __version__
+
+    def test_spec_servers_default_to_request_host(self, client):
+        """Test that servers use the request host for each configured scheme."""
+        spec = client.get("/apispec.json", base_url="http://qr.internal:8080").get_json()
+        assert [s["url"] for s in spec["servers"]] == [
+            f"{scheme}://qr.internal:8080" for scheme in config.SWAGGER_SCHEMES
+        ]
+
+    def test_spec_servers_use_swagger_host(self, client, monkeypatch):
+        """Test that SWAGGER_HOST and SWAGGER_SCHEMES override the servers list."""
+        monkeypatch.setattr(config, "SWAGGER_HOST", "qr.example.com")
+        monkeypatch.setattr(config, "SWAGGER_SCHEMES", ["https"])
+        spec = client.get("/apispec.json").get_json()
+        assert spec["servers"] == [{"url": "https://qr.example.com"}]
+
+    def test_spec_matches_routes(self):
+        """Test that every API route is documented and every documented path exists."""
+        internal = {"/static/<path:filename>", "/docs", "/docs/", "/apispec.json"}
+        routes = {
+            (rule.rule, method.lower())
+            for rule in app.url_map.iter_rules()
+            if rule.rule not in internal
+            for method in rule.methods - {"HEAD", "OPTIONS"}
+        }
+        documented = {
+            (path, method) for path, ops in OPENAPI_SPEC["paths"].items() for method in ops
+        }
+        assert routes == documented
+
+    def test_spec_generate_params_match_validation(self):
+        """Test that documented limits and types agree with the runtime config."""
+        params = {p["name"]: p for p in OPENAPI_SPEC["paths"]["/generate"]["get"]["parameters"]}
+        assert params["content"]["schema"]["maxLength"] == config.MAX_CONTENT_LENGTH
+        assert set(params["type"]["schema"]["enum"]) == config.ALLOWED_TYPES
 
 
 class TestRateLimit:

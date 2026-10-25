@@ -1,0 +1,193 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "QR/Barcode Generation API",
+    "description": "A lightweight microservice for generating QR codes and barcodes",
+    "contact": {
+      "name": "foodsaid",
+      "url": "https://github.com/foodsaid/qrbarcode"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/foodsaid/qrbarcode/blob/main/LICENSE"
+    },
+    "version": "set at runtime from main.__version__"
+  },
+  "tags": [
+    {
+      "name": "generate",
+      "description": "Code generation endpoints"
+    },
+    {
+      "name": "health",
+      "description": "Health check endpoints"
+    }
+  ],
+  "paths": {
+    "/generate": {
+      "get": {
+        "tags": ["generate"],
+        "summary": "Generate a QR code or barcode",
+        "operationId": "generateCode",
+        "parameters": [
+          {
+            "name": "content",
+            "in": "query",
+            "required": true,
+            "description": "Text content to encode.\n- QR code: max 1000 chars, supports any text\n- Barcode: max 64 chars, ASCII characters only (supports special chars like `-` `.` `@` `#`)",
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "example": "Hello World"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Type of code to generate (case-insensitive)",
+            "schema": {
+              "type": "string",
+              "enum": ["qrcode", "barcode"],
+              "default": "qrcode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generated PNG image",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health check for monitoring and container orchestration",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "example": "OK"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Basic service metrics",
+        "operationId": "metrics",
+        "responses": {
+          "200": {
+            "description": "Service metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metrics"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Metrics": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "version": {
+            "type": "string",
+            "example": "0.1.2"
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "max_content_length": {
+                "type": "integer",
+                "example": 1000
+              },
+              "rate_limit": {
+                "type": "string",
+                "description": "Global rate limit, or \"disabled\"",
+                "example": "100 per minute"
+              },
+              "allowed_types": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["qrcode", "barcode"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid input parameters",
+        "content": {
+          "text/html": {
+            "schema": {
+              "type": "string",
+              "example": "Missing 'content' parameter"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded",
+        "content": {
+          "text/html": {
+            "schema": {
+              "type": "string",
+              "example": "Rate limit exceeded. Please try again later."
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal server error",
+        "content": {
+          "text/html": {
+            "schema": {
+              "type": "string",
+              "example": "Internal server error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
