@@ -4,7 +4,7 @@ services:
     pull_policy: never
     container_name: qr-service
     ports:
-      - "${QR_HOST_PORT:-8080}:8080"
+      - "${QR_HOST_PORT:-8505}:8080"
     environment:
       - PORT=8080
       - DEBUG=false

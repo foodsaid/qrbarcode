@@ -19,7 +19,7 @@ from flask import Flask, Response, jsonify, request, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 
 @dataclass
@@ -43,9 +43,10 @@ class Config:
     BARCODE_FONT_SIZE: int = 12  # Font size for text below barcode
     BARCODE_TEXT_DISTANCE: float = 6.0  # Distance between barcode and text in mm
     BARCODE_MARGIN_TOP: float = 3.0  # Top margin in mm
-    # API docs servers (empty host = use the host the docs page was served from)
+    # API docs servers. Empty host = relative "/" (same scheme and host as the docs page).
+    # Schemes only apply when SWAGGER_HOST is set; the first one is Swagger UI's default.
     SWAGGER_HOST: str = ""
-    SWAGGER_SCHEMES: list = field(default_factory=lambda: ["http", "https"])
+    SWAGGER_SCHEMES: list = field(default_factory=lambda: ["https", "http"])
 
     def __post_init__(self):
         """Load configuration from environment."""
@@ -247,9 +248,13 @@ def generate_code() -> Union[Response, Tuple[str, int]]:
 @app.route("/apispec.json")
 def apispec() -> Response:
     """Serve the OpenAPI spec with servers for the configured host and schemes."""
-    host = config.SWAGGER_HOST or request.host
-    spec = dict(OPENAPI_SPEC, servers=[{"url": f"{s}://{host}"} for s in config.SWAGGER_SCHEMES])
-    return jsonify(spec)
+    if config.SWAGGER_HOST:
+        servers = [{"url": f"{s}://{config.SWAGGER_HOST}"} for s in config.SWAGGER_SCHEMES]
+    else:
+        # A relative URL makes Swagger UI call back on the page's own scheme and host, so it never
+        # offers https on a plain-http port (or http behind a TLS-terminating proxy).
+        servers = [{"url": "/"}]
+    return jsonify(dict(OPENAPI_SPEC, servers=servers))
 
 
 @app.route("/docs")

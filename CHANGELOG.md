@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-10-25
+
+### Fixed
+- Swagger UI "Try it out" hung for ~30 s and then failed when the `https` server was picked on a plain-http port. Without `SWAGGER_HOST`, the spec now lists only the relative server `/`, so requests use the docs page's own scheme and host (also correct behind a TLS-terminating proxy)
+
+### Changed
+- `SWAGGER_SCHEMES` only applies when `SWAGGER_HOST` is set; its default is now `https,http`
+- Default host port is now `8505` (Docker Compose `QR_HOST_PORT`, `run_local.sh`, `make run`, README examples); the container still listens on `8080`
+
+---
+
 ## [0.1.2] - 2026-10-25
 
 ### Changed
@@ -136,6 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.1.3]: https://github.com/foodsaid/qrbarcode/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/foodsaid/qrbarcode/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/foodsaid/qrbarcode/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/foodsaid/qrbarcode/releases/tag/v0.1.0

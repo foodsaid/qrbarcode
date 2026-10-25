@@ -256,16 +256,26 @@ class TestAPIDocs:
         assert spec["openapi"].startswith("3.")
         assert spec["info"]["version"] == __version__
 
-    def test_spec_servers_default_to_request_host(self, client):
-        """Test that servers use the request host for each configured scheme."""
-        spec = client.get("/apispec.json", base_url="http://qr.internal:8080").get_json()
-        assert [s["url"] for s in spec["servers"]] == [
-            f"{scheme}://qr.internal:8080" for scheme in config.SWAGGER_SCHEMES
-        ]
+    def test_spec_servers_default_to_relative(self, client):
+        """Test that without SWAGGER_HOST the only server is relative, whatever the request."""
+        for base_url in ("http://127.0.0.1:8505", "https://qr.example.com"):
+            spec = client.get("/apispec.json", base_url=base_url).get_json()
+            assert spec["servers"] == [{"url": "/"}], base_url
+
+    def test_spec_servers_ignore_schemes_without_host(self, client, monkeypatch):
+        """Test that SWAGGER_SCHEMES alone cannot advertise https on a plain-http port."""
+        monkeypatch.setattr(config, "SWAGGER_SCHEMES", ["https", "http"])
+        spec = client.get("/apispec.json", base_url="http://127.0.0.1:8505").get_json()
+        assert all(not s["url"].startswith("https://") for s in spec["servers"])
 
     def test_spec_servers_use_swagger_host(self, client, monkeypatch):
         """Test that SWAGGER_HOST and SWAGGER_SCHEMES override the servers list."""
         monkeypatch.setattr(config, "SWAGGER_HOST", "qr.example.com")
+        spec = client.get("/apispec.json").get_json()
+        assert spec["servers"] == [
+            {"url": "https://qr.example.com"},
+            {"url": "http://qr.example.com"},
+        ]
         monkeypatch.setattr(config, "SWAGGER_SCHEMES", ["https"])
         spec = client.get("/apispec.json").get_json()
         assert spec["servers"] == [{"url": "https://qr.example.com"}]

@@ -42,9 +42,9 @@ docker build -t qr-service .
 
 #### 2. Run the Service / 启动服务
 
-**Default Port / 默认端口 (8080):**
+**Default Port / 默认端口 (8505 on the host, 8080 inside the container / 宿主机 8505，容器内 8080):**
 ```bash
-docker run -d -p 8080:8080 --name qr-service qr-service
+docker run -d -p 8505:8080 --name qr-service qr-service
 ```
 
 **Custom Port / 自定义端口 (e.g., 9090):**
@@ -55,16 +55,16 @@ docker run -d -p 9090:9090 -e PORT=9090 --name qr-service-custom qr-service
 #### 3. Verify Service is Running / 验证服务运行
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8505/health
 # Expected output: OK
 ```
 
 ### Method 2: Docker Compose
 
 The compose file runs the `qr-service:stable` image on the external Docker network `qrnetwork`,
-published on host port `8080` (override with `QR_HOST_PORT`).
+published on host port `8505` (override with `QR_HOST_PORT`, e.g. `127.0.0.1:8505` to listen on localhost only).
 
-compose 文件使用 `qr-service:stable` 镜像，接入外部 Docker 网络 `qrnetwork`，默认映射到宿主机 `8080` 端口（可通过 `QR_HOST_PORT` 修改）。
+compose 文件使用 `qr-service:stable` 镜像，接入外部 Docker 网络 `qrnetwork`，默认映射到宿主机 `8505` 端口（可通过 `QR_HOST_PORT` 修改，例如设为 `127.0.0.1:8505` 只监听本机）。
 
 ```bash
 docker network create qrnetwork   # first time only / 仅首次
@@ -98,10 +98,10 @@ make docker-prune-dangling
 pip install --require-hashes -r requirements.txt
 
 # Run the service / 运行服务
-python main.py
+PORT=8505 python main.py
 
 # Or with gunicorn / 或使用 gunicorn
-gunicorn --bind 0.0.0.0:8080 main:app
+gunicorn --bind 0.0.0.0:8505 main:app
 ```
 
 ## Usage / 使用方法
@@ -115,13 +115,13 @@ Interactive Swagger UI is available at:
 交互式Swagger UI文档位于：
 
 ```
-http://localhost:8080/docs
+http://localhost:8505/docs
 ```
 
 ### Health Check / 健康检查
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8505/health
 ```
 
 ### Metrics / 指标
@@ -130,14 +130,14 @@ Get service metrics and configuration:
 获取服务指标和配置：
 
 ```bash
-curl http://localhost:8080/metrics
+curl http://localhost:8505/metrics
 ```
 
 **Response:**
 ```json
 {
   "status": "healthy",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "config": {
     "max_content_length": 1000,
     "rate_limit": "100 per minute",
@@ -149,39 +149,39 @@ curl http://localhost:8080/metrics
 ### Generate QR Code (Default) / 生成二维码 (默认)
 
 ```http
-GET http://localhost:8080/generate?content=<YOUR_CONTENT>
+GET http://localhost:8505/generate?content=<YOUR_CONTENT>
 ```
 
 **Example / 示例:**
 
 ```bash
 # Simple text / 简单文本
-curl "http://localhost:8080/generate?content=Hello World" > qrcode.png
+curl "http://localhost:8505/generate?content=Hello World" > qrcode.png
 
 # Order ID / 订单号
-curl "http://localhost:8080/generate?content=ORD-2023-001" > qrcode.png
+curl "http://localhost:8505/generate?content=ORD-2023-001" > qrcode.png
 
 # URL / 网址
-curl "http://localhost:8080/generate?content=https://example.com" > qrcode.png
+curl "http://localhost:8505/generate?content=https://example.com" > qrcode.png
 
 # Explicit type / 显式指定类型
-curl "http://localhost:8080/generate?content=Hello&type=qrcode" > qrcode.png
+curl "http://localhost:8505/generate?content=Hello&type=qrcode" > qrcode.png
 ```
 
 ### Generate Barcode / 生成条形码
 
 ```http
-GET http://localhost:8080/generate?content=<YOUR_CONTENT>&type=barcode
+GET http://localhost:8505/generate?content=<YOUR_CONTENT>&type=barcode
 ```
 
 **Example / 示例:**
 
 ```bash
 # Alphanumeric content (Code128) / 字母数字内容
-curl "http://localhost:8080/generate?content=ABC123&type=barcode" > barcode.png
+curl "http://localhost:8505/generate?content=ABC123&type=barcode" > barcode.png
 
 # Numbers only / 仅数字
-curl "http://localhost:8080/generate?content=123456789&type=barcode" > barcode.png
+curl "http://localhost:8505/generate?content=123456789&type=barcode" > barcode.png
 ```
 
 ## API Reference / API 参考
@@ -312,7 +312,7 @@ docker load -i qr-service.tar
 1. **Use Environment Variables / 使用环境变量**
    ```bash
    docker run -d \
-     -p 8080:8080 \
+     -p 8505:8080 \
      -e PORT=8080 \
      -e DEBUG=false \
      --name qr-service \
@@ -322,7 +322,7 @@ docker load -i qr-service.tar
 2. **Resource Limits / 资源限制**
    ```bash
    docker run -d \
-     -p 8080:8080 \
+     -p 8505:8080 \
      --memory="256m" \
      --cpus="0.5" \
      --name qr-service \
@@ -332,7 +332,7 @@ docker load -i qr-service.tar
 3. **Restart Policy / 重启策略**
    ```bash
    docker run -d \
-     -p 8080:8080 \
+     -p 8505:8080 \
      --restart unless-stopped \
      --name qr-service \
      qr-service
@@ -364,7 +364,7 @@ docker inspect qr-service | grep -A 10 Health
 docker run -d -p 9090:8080 -e PORT=8080 --name qr-service qr-service
 
 # Or stop the conflicting service / 或停止冲突的服务
-lsof -ti:8080 | xargs kill -9
+lsof -ti:8505 | xargs kill -9
 ```
 
 ### "Barcode content must contain only ASCII characters" error / 条形码内容必须为 ASCII 字符
@@ -375,10 +375,10 @@ Barcodes (Code128) support ASCII characters only (max 64), including `-`, `.`, `
 
 ```bash
 # Wrong / 错误
-curl "http://localhost:8080/generate?content=Hello世界&type=barcode"
+curl "http://localhost:8505/generate?content=Hello世界&type=barcode"
 
 # Correct / 正确
-curl "http://localhost:8080/generate?content=ABC-123&type=barcode"
+curl "http://localhost:8505/generate?content=ABC-123&type=barcode"
 ```
 
 ### "Content exceeds maximum length" error / 内容超过最大长度错误
@@ -418,13 +418,13 @@ Environment variables:
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `PORT` | `8080` | Server port |
+| `PORT` | `8080` | Port the app listens on (inside the container; map it to a host port such as `8505`) |
 | `DEBUG` | `False` | Enable Flask debug mode (not for production) |
 | `RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable rate limiting (e.g. trusted internal network) |
 | `RATE_LIMIT` | `100 per minute` | Global limit per client IP |
 | `GENERATE_RATE_LIMIT` | `50 per minute` | Limit per client IP on `/generate` |
-| `SWAGGER_HOST` | *(empty)* | Host used for the OpenAPI `servers` list, e.g. `qr.example.com`; empty uses the request host |
-| `SWAGGER_SCHEMES` | `http,https` | Protocols offered in Swagger UI |
+| `SWAGGER_HOST` | *(empty)* | Public host for the OpenAPI `servers` list, e.g. `qr.example.com`. Empty = relative `/`, so Swagger UI calls the same scheme and host the docs page was opened on |
+| `SWAGGER_SCHEMES` | `https,http` | Protocols listed for `SWAGGER_HOST` (first is the default); ignored when `SWAGGER_HOST` is empty |
 
 Rate limits are stored in memory, so each gunicorn worker counts separately. Behind a reverse proxy, all requests share the proxy's IP unless the proxy is configured to pass the client address.
 
