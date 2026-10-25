@@ -87,3 +87,7 @@ Desktop.ini
 
 # Local AI tool config
 .claude/
+
+# Signing keys (created by scripts/gen_signing_key.py) - never commit
+secrets/
+*.pem

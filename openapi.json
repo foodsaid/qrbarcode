@@ -13,6 +13,10 @@
     {
       "name": "health",
       "description": "健康检查与运行状态 · Health & metrics"
+    },
+    {
+      "name": "sign",
+      "description": "签名防伪 · Signed anti-counterfeit codes"
     }
   ],
   "paths": {
@@ -396,6 +400,247 @@
           }
         }
       }
+    },
+    "/sign": {
+      "post": {
+        "tags": [
+          "sign"
+        ],
+        "summary": "签发带签名的 URL · Sign a URL or GS1 Digital Link",
+        "operationId": "sign",
+        "description": "用 Ed25519 私钥签名，返回在末尾追加了 `kid` 与 `sig` 的 URL；把它作为 `content` 传给 `/generate` 即可生成二维码。签名能防止伪造新码（编造批号、改有效期），不能防止原样复印。\n\nSigns with the server's Ed25519 key and appends `kid` and `sig`. Pass the result as `content` to `/generate`.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "url"
+                    ],
+                    "properties": {
+                      "url": {
+                        "type": "string",
+                        "example": "https://id.gs1.org/01/09506000134352/10/ABC123?17=271231"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "gtin"
+                    ],
+                    "properties": {
+                      "gtin": {
+                        "type": "string"
+                      },
+                      "batch": {
+                        "type": "string"
+                      },
+                      "serial": {
+                        "type": "string"
+                      },
+                      "prod_date": {
+                        "type": "string"
+                      },
+                      "pack_date": {
+                        "type": "string"
+                      },
+                      "best_before": {
+                        "type": "string"
+                      },
+                      "expiry": {
+                        "type": "string"
+                      },
+                      "domain": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "已签名 · Signed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "kid": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求无效 · Invalid body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或错误的 API key · Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "description": "服务端未配置签名密钥 · Signing not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verify": {
+      "get": {
+        "tags": [
+          "sign"
+        ],
+        "summary": "验证扫到的签名码 · Verify a scanned signed code",
+        "operationId": "verify",
+        "parameters": [
+          {
+            "name": "u",
+            "in": "query",
+            "required": true,
+            "description": "扫码得到的完整 URL · The full scanned URL",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "验证结果 · Result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "kid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "url": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "gs1": {
+                      "type": "object",
+                      "nullable": true,
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "缺少 u · Missing u",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/.well-known/qr-signing-keys.json": {
+      "get": {
+        "tags": [
+          "sign"
+        ],
+        "summary": "签名公钥（JWKS） · Public keys for offline verification",
+        "operationId": "signingKeys",
+        "responses": {
+          "200": {
+            "description": "JWKS（OKP / Ed25519）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -495,6 +740,13 @@
             }
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "签发用 API key（服务端只保存其 SHA-256）"
       }
     }
   }

@@ -54,4 +54,7 @@ requirements-dev.txt
 # Other
 *.log
 .env
+# Signing keys must never be baked into the image
+secrets/
+*.pem
 .env.local

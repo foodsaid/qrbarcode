@@ -1,0 +1,16 @@
+# Enables POST /sign. Used on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.signing.yml up -d
+# scripts/deploy_local.sh adds it automatically when secrets/signing_key.pem exists.
+# Create the key with: python scripts/gen_signing_key.py secrets/signing_key.pem
+services:
+  qr-service:
+    environment:
+      - SIGNING_KEY_FILE=/run/secrets/qr_signing_key
+      # SHA-256 of the API key(s), printed by gen_signing_key.py; put it in .env
+      - SIGNING_API_KEY_HASHES=${SIGNING_API_KEY_HASHES:?set SIGNING_API_KEY_HASHES in .env}
+    secrets:
+      - qr_signing_key
+
+secrets:
+  qr_signing_key:
+    file: ./secrets/signing_key.pem

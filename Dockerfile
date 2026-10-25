@@ -30,7 +30,7 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
 # Copy application code, gunicorn config and OpenAPI spec
-COPY --chown=appuser:appuser main.py codes.py gs1.py gunicorn.conf.py openapi.json ./
+COPY --chown=appuser:appuser main.py codes.py gs1.py signing.py gunicorn.conf.py openapi.json ./
 COPY --chown=appuser:appuser static ./static
 COPY --chown=appuser:appuser LICENSE THIRD_PARTY_NOTICES.md ./
 
