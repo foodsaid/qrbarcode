@@ -65,7 +65,7 @@ def tool_errors() -> Iterator[None]:
     try:
         yield
     except codes.CodeError as e:
-        raise ToolError(str(e)) from None
+        raise ToolError(e.public_message) from None
 
 
 def load_keyring() -> signing.KeyRing:
