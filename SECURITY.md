@@ -46,7 +46,7 @@ We will respond within 48 hours and provide updates every 5 business days.
 
 | Item | Why it is accepted |
 | :--- | :--- |
-| DOMPurify 3.4.13 bundled in Swagger UI 5.33.1 has advisories (incl. GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr) | They need `SAFE_FOR_TEMPLATES` or `IN_PLACE`, which Swagger UI never enables, and only this project's own `openapi.json` is rendered (`queryConfigEnabled: false`). Reviewed in `scripts/vendored_vuln_allowlist.json`; upgrade once a Swagger UI release bundles DOMPurify 3.4.17+. |
+| DOMPurify 3.4.16 bundled in Swagger UI 5.34.0 has advisories (incl. GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr) | They need `SAFE_FOR_TEMPLATES` or `IN_PLACE`, which Swagger UI never enables, and only this project's own `openapi.json` is rendered (`queryConfigEnabled: false`). Reviewed in `scripts/vendored_vuln_allowlist.json`; upgrade once a Swagger UI release bundles DOMPurify 3.4.17+. |
 | Rate limits are in memory, per gunicorn worker (2 workers) | The effective limit per IP is up to 2× the configured value. Use a shared store (e.g. Redis via `limits`) if exact limits matter. |
 | `Access-Control-Allow-Origin: *` | Public, read-only GET API with no cookies or authentication. |
 | A signed code can be photocopied | Signatures stop forged data, not copies. Detecting copies needs per-item serials and scan tracking (planned). |
