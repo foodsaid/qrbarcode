@@ -1,6 +1,6 @@
 # Multi-stage build for optimized image size.
 # Base image is pinned by digest; Dependabot proposes digest updates.
-FROM python:3.13-slim@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e071763d17725460962 AS builder
+FROM python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90 AS builder
 
 # Install dependencies in builder stage
 WORKDIR /app
@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user --require-hashes -r requirements.txt
 
 # Final production image
-FROM python:3.13-slim@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e071763d17725460962
+FROM python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90
 
 # Python runtime optimizations: unbuffered logs, no .pyc files
 ENV PYTHONUNBUFFERED=1 \
@@ -16,8 +16,13 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Drop pip and the ensurepip wheels: unused at runtime, and their vendored packages
 # (urllib3, msgpack, setuptools) are the image's only scanner findings.
-# Then create the non-root user. No network access: dependencies come from the builder.
-RUN python -m pip uninstall --yes --no-input pip && \
+# Apply pending Debian security updates first: the upstream image can lag behind fixed
+# packages (e.g. zlib1g), which the Trivy image scan rejects.
+# Then create the non-root user. Python dependencies come from the builder.
+RUN apt-get update && \
+    apt-get upgrade -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/* && \
+    python -m pip uninstall --yes --no-input pip && \
     rm -rf /usr/local/lib/python3.13/ensurepip && \
     useradd -m -u 1000 appuser && \
     mkdir -p /app && \
