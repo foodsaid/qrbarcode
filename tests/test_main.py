@@ -316,7 +316,7 @@ class TestAPIDocs:
         """Test that /docs loads the vendored Swagger UI and no jQuery or flasgger assets."""
         response = client.get("/docs")
         assert response.status_code == 200
-        assert b"/static/vendor/swagger-ui-5.33.1/swagger-ui-bundle.js" in response.data
+        assert b"/static/vendor/swagger-ui-5.34.0/swagger-ui-bundle.js" in response.data
         assert b"/static/docs/init.js" in response.data
         assert b"jquery" not in response.data.lower()
         assert b"flasgger" not in response.data
@@ -325,8 +325,8 @@ class TestAPIDocs:
     def test_vendored_assets_served(self, client):
         """Test that the docs page assets are served."""
         for path in (
-            "/static/vendor/swagger-ui-5.33.1/swagger-ui-bundle.js",
-            "/static/vendor/swagger-ui-5.33.1/swagger-ui.css",
+            "/static/vendor/swagger-ui-5.34.0/swagger-ui-bundle.js",
+            "/static/vendor/swagger-ui-5.34.0/swagger-ui.css",
             "/static/docs/init.js",
             "/static/docs/docs.css",
             "/static/docs/favicon.svg",

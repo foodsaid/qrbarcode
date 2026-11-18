@@ -10,9 +10,9 @@ CI fails if a GPL/AGPL/LGPL/SSPL package appears in the runtime image (`scripts/
 
 | Component | Version | License | Files |
 | :--- | :--- | :--- | :--- |
-| [Swagger UI](https://github.com/swagger-api/swagger-ui) (`swagger-ui-dist`) | 5.33.1 | Apache-2.0 | `static/vendor/swagger-ui-5.33.1/` — `LICENSE`, `NOTICE`, and `swagger-ui-bundle.js.LICENSE.txt` for the libraries bundled inside it (React, DOMPurify, Immutable, etc.: MIT / BSD / Apache-2.0) |
+| [Swagger UI](https://github.com/swagger-api/swagger-ui) (`swagger-ui-dist`) | 5.34.0 | Apache-2.0 | `static/vendor/swagger-ui-5.34.0/` — `LICENSE`, `NOTICE`, and `swagger-ui-bundle.js.LICENSE.txt` for the libraries bundled inside it (React, DOMPurify, Immutable, etc.: MIT / BSD / Apache-2.0) |
 
-The vendored files are byte-identical to the npm release `swagger-ui-dist@5.33.1`.
+The vendored files are byte-identical to the npm release `swagger-ui-dist@5.34.0`.
 Served at `/docs`, so the license files are also served next to them.
 
 ## Runtime dependencies (Docker image) / 运行时依赖

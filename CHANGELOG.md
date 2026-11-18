@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Upgraded the vendored Swagger UI from 5.33.1 to 5.34.0 (`static/vendor/swagger-ui-5.34.0/`, byte-identical to the npm release). It bundles DOMPurify 3.4.16 instead of 3.4.13, which removes GHSA-6688-9rhm-gjv2 and GHSA-p98j-92pf-mc4p from the reviewed-advisory allowlist; GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr and GHSA-c6gr-qvv4-5v3f remain until a release bundles DOMPurify 3.4.17
+
 ### Fixed
 - Docs page: "Try it out" on `/generate` no longer pre-fills `gtin` with an example or sends the default `domain`, so plain QR / barcode requests carry only the parameters that apply (the example and default are still stated in the parameter descriptions)
 
