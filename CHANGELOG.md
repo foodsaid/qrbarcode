@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Upgraded the vendored Swagger UI from 5.34.0 to 5.35.0 (`static/vendor/swagger-ui-5.35.0/`, byte-identical to the npm release). It bundles DOMPurify 3.4.17 instead of 3.4.16, which fixes GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr and GHSA-c6gr-qvv4-5v3f; the reviewed-advisory allowlist for vendored code is now empty
+
 ## [0.2.1] - 2026-11-18
 
 ### Security
