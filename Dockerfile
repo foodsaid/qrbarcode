@@ -1,6 +1,6 @@
 # Multi-stage build for optimized image size.
 # Base image is pinned by digest; Dependabot proposes digest updates.
-FROM python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90 AS builder
+FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 AS builder
 
 # Install dependencies in builder stage
 WORKDIR /app
@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user --require-hashes -r requirements.txt
 
 # Final production image
-FROM python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90
+FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
 
 # Python runtime optimizations: unbuffered logs, no .pyc files
 ENV PYTHONUNBUFFERED=1 \
@@ -23,7 +23,7 @@ RUN apt-get update && \
     apt-get upgrade -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     python -m pip uninstall --yes --no-input pip && \
-    rm -rf /usr/local/lib/python3.13/ensurepip && \
+    rm -rf /usr/local/lib/python3.*/ensurepip && \
     useradd -m -u 1000 appuser && \
     mkdir -p /app && \
     chown -R appuser:appuser /app
