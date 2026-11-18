@@ -652,7 +652,7 @@
           },
           "version": {
             "type": "string",
-            "example": "0.2.1"
+            "example": "0.2.2"
           },
           "config": {
             "type": "object",

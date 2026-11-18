@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-18
+
 ### Security
 - Upgraded the vendored Swagger UI from 5.34.0 to 5.35.0 (`static/vendor/swagger-ui-5.35.0/`, byte-identical to the npm release). It bundles DOMPurify 3.4.17 instead of 3.4.16, which fixes GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr and GHSA-c6gr-qvv4-5v3f; the reviewed-advisory allowlist for vendored code is now empty
 
@@ -231,7 +233,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/foodsaid/qrbarcode/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/foodsaid/qrbarcode/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/foodsaid/qrbarcode/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/foodsaid/qrbarcode/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/foodsaid/qrbarcode/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/foodsaid/qrbarcode/compare/v0.1.4...v0.1.5
