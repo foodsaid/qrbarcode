@@ -24,6 +24,6 @@ bandit==1.9.4
 pip-audit==2.10.1
 
 # Security floors for transitive dev dependencies (OSV, 2026-10-25)
-virtualenv>=21.15.2
-filelock>=4.2.6
+virtualenv>=21.15.6
+filelock>=4.2.9
 certifi>=2026.10.19
